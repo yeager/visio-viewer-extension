@@ -164,3 +164,38 @@ body {
 }
 .drop-zone.hidden { display: none; }
 .drop-zone p { font-size: 16px; color: var(--accent); font-weight: 500; }
+
+/* File prompt overlay */
+.file-prompt-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.file-prompt-box {
+  background: #1e1e2e;
+  border: 1px solid #444;
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  max-width: 420px;
+  color: #cdd6f4;
+}
+.file-prompt-box h2 { margin: 0 0 1rem; font-size: 1.3rem; }
+.file-prompt-box p { margin: 0.5rem 0; line-height: 1.5; }
+.file-prompt-btn {
+  display: inline-block;
+  margin: 1rem 0;
+  padding: 0.7rem 1.5rem;
+  background: #89b4fa;
+  color: #1e1e2e;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.file-prompt-btn:hover { background: #74c7ec; }
+.file-prompt-hint { font-size: 0.85rem; color: #888; }

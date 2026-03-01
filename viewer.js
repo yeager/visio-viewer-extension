@@ -292,13 +292,15 @@
       await convertFile(buf, filename);
     } catch (e) {
       setLoading(false);
-      let msg = "Failed to download file: " + e.message;
       if (url.startsWith("file://")) {
-        msg += "\n\nFor local files, enable 'Allow access to file URLs' in chrome://extensions for this extension, or use the file picker / drag & drop.";
+        // file:// fetch failed — show friendly file picker prompt
+        const fname = decodeURIComponent(url.split("/").pop().split("?")[0] || "file.vsdx");
+        showFilePrompt(fname);
       } else {
+        let msg = "Failed to download file: " + e.message;
         msg += "\n\nTry drag & drop or the file picker for local files.";
+        showError(msg);
       }
-      showError(msg);
     }
   }
 
@@ -311,14 +313,71 @@
     }
   });
 
+  // ---- Show file picker prompt for local files ----
+  function showFilePrompt(filename) {
+    const overlay = document.createElement("div");
+    overlay.className = "file-prompt-overlay";
+    overlay.innerHTML = `
+      <div class="file-prompt-box">
+        <h2>📁 Local File Detected</h2>
+        <p>Chrome extensions cannot directly read local files.<br>
+        Please select <strong>${filename}</strong> using the file picker below.</p>
+        <label class="file-prompt-btn">
+          Select File
+          <input type="file" accept=".vsdx,.vsd,.vsdm" style="display:none">
+        </label>
+        <p class="file-prompt-hint">Or drag & drop the file onto this page.</p>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const input = overlay.querySelector("input[type=file]");
+    input.addEventListener("change", async () => {
+      const file = input.files[0];
+      if (!file) return;
+      overlay.remove();
+      const buf = await file.arrayBuffer();
+      await convertFile(buf, file.name);
+    });
+  }
+
+  // ---- Load pending file data from background (for file:// URLs) ----
+  async function loadPendingFile() {
+    return new Promise((resolve) => {
+      chrome.runtime.sendMessage({ type: "get-pending-file" }, (response) => {
+        if (chrome.runtime.lastError || !response || response.error) {
+          resolve(null);
+          return;
+        }
+        resolve(response);
+      });
+    });
+  }
+
   // ---- Init ----
   async function main() {
     await initPyodide();
 
-    // Check URL param
     const params = new URLSearchParams(location.search);
+    const source = params.get("source");
     const url = params.get("url");
-    if (url) {
+
+    if (source === "local") {
+      // File loaded via content script → get data from background
+      const pending = await loadPendingFile();
+      if (pending && pending.data) {
+        const buf = new Uint8Array(pending.data).buffer;
+        await convertFile(buf, pending.filename || "file.vsdx");
+      } else {
+        setLoading(false);
+        showError("Failed to load local file. Try drag & drop or the file picker.");
+      }
+    } else if (source === "file") {
+      // Navigated to a local file:// .vsdx — prompt user to select it
+      setLoading(false);
+      const fname = params.get("name") || "file.vsdx";
+      showFilePrompt(fname);
+    } else if (url) {
       await openFromUrl(url);
     } else {
       setLoading(false);
