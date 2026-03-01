@@ -77,7 +77,7 @@ body {
   box-shadow: 0 8px 32px var(--shadow);
 }
 .error-box h2 { margin-bottom: 8px; }
-.error-box p { margin-bottom: 16px; color: #888; font-size: 14px; }
+.error-box p { margin-bottom: 16px; color: #888; font-size: 14px; white-space: pre-line; }
 .error-box button {
   padding: 8px 20px; border: none; border-radius: 6px;
   background: var(--accent); color: white; cursor: pointer;

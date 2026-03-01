@@ -255,6 +255,62 @@
     else if (e.key === "0") zoomToFit();
   });
 
+  // ---- Fetch URL (with file:// support via background service worker) ----
+  async function fetchUrl(url) {
+    if (url.startsWith("file://")) {
+      // file:// URLs can't be fetched from extension pages directly
+      // Route through background service worker
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({ type: "fetch-file", url: url }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error("Could not access local file. Use the file picker or drag & drop instead."));
+            return;
+          }
+          if (response && response.error) {
+            reject(new Error(response.error));
+            return;
+          }
+          if (response && response.data) {
+            resolve(new Uint8Array(response.data).buffer);
+          } else {
+            reject(new Error("Empty response from background worker."));
+          }
+        });
+      });
+    }
+
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    return resp.arrayBuffer();
+  }
+
+  async function openFromUrl(url) {
+    setLoading(true, "Downloading file…");
+    try {
+      const buf = await fetchUrl(url);
+      const filename = decodeURIComponent(url.split("/").pop().split("?")[0] || "file.vsdx");
+      await convertFile(buf, filename);
+    } catch (e) {
+      setLoading(false);
+      let msg = "Failed to download file: " + e.message;
+      if (url.startsWith("file://")) {
+        msg += "\n\nFor local files, enable 'Allow access to file URLs' in chrome://extensions for this extension, or use the file picker / drag & drop.";
+      } else {
+        msg += "\n\nTry drag & drop or the file picker for local files.";
+      }
+      showError(msg);
+    }
+  }
+
+  // ---- Open URL button ----
+  const openUrlBtn = document.getElementById("open-url");
+  openUrlBtn.addEventListener("click", () => {
+    const url = prompt("Enter URL to a .vsdx file:");
+    if (url && url.trim()) {
+      openFromUrl(url.trim());
+    }
+  });
+
   // ---- Init ----
   async function main() {
     await initPyodide();
@@ -263,17 +319,7 @@
     const params = new URLSearchParams(location.search);
     const url = params.get("url");
     if (url) {
-      setLoading(true, "Downloading file…");
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error("HTTP " + resp.status);
-        const buf = await resp.arrayBuffer();
-        const filename = url.split("/").pop().split("?")[0] || "file.vsdx";
-        await convertFile(buf, decodeURIComponent(filename));
-      } catch (e) {
-        setLoading(false);
-        showError("Failed to download file: " + e.message);
-      }
+      await openFromUrl(url);
     } else {
       setLoading(false);
     }

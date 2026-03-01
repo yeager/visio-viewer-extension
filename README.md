@@ -5,6 +5,9 @@ View Microsoft Visio (.vsdx) files directly in Chrome using [libvisio-ng](https:
 ## Features
 
 - Open `.vsdx` files via drag & drop, file picker, or by clicking download links
+- **Open from URL** — paste any URL to a `.vsdx` file via the toolbar button
+- **Automatic interception** — navigating to a `.vsdx` URL or downloading one opens the viewer automatically
+- **Local file support** — file:// URLs routed through the service worker (requires "Allow access to file URLs")
 - Multi-page navigation with page names
 - Pan, zoom (mouse wheel), and zoom-to-fit
 - Keyboard shortcuts: ← → for pages, +/- for zoom, 0 for fit
@@ -16,6 +19,7 @@ The extension uses a **sandboxed iframe** approach to run Pyodide:
 
 - `viewer.html` — Main UI with toolbar, viewport, and controls
 - `sandbox.html` — Sandboxed page with relaxed CSP that loads Pyodide + libvisio-ng
+- `background.js` — Service worker that intercepts `.vsdx` downloads/navigation and handles file:// fetching
 - Communication between viewer and sandbox via `postMessage`
 - This avoids MV3 Content Security Policy restrictions on `eval()` and WASM
 
@@ -27,11 +31,21 @@ The extension uses a **sandboxed iframe** approach to run Pyodide:
 4. Click **Load unpacked** and select the extension folder
 5. The extension is ~15MB due to bundled Pyodide runtime
 
+### Optional: Local file access
+
+To open `file://` URLs in the viewer:
+
+1. Go to `chrome://extensions/`
+2. Click **Details** on the Visio Viewer extension
+3. Enable **Allow access to file URLs**
+
 ## Usage
 
 - **Drag & drop** a `.vsdx` file onto the viewer
 - **Click the folder icon** in the toolbar to open a file picker
+- **Click the globe icon** in the toolbar to open a `.vsdx` file from a URL
 - **Click a `.vsdx` download link** — the extension intercepts it and opens the viewer
+- **Navigate to a `.vsdx` URL** — the extension redirects to the viewer automatically
 
 ## Bundled Dependencies
 
