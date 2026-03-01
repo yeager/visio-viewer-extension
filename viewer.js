@@ -1,11 +1,8 @@
-/* Visio Viewer — Pyodide + libvisio-ng */
+/* Visio Viewer — Sandboxed Pyodide + libvisio-ng */
 (function () {
   "use strict";
 
-  const PYODIDE_CDN = "https://cdn.jsdelivr.net/pyodide/v0.26.4/full/";
-
   // State
-  let pyodide = null;
   let svgPages = [];
   let pageNames = [];
   let currentPage = 0;
@@ -15,6 +12,9 @@
   let isDragging = false;
   let dragStartX = 0, dragStartY = 0;
   let dragStartTX = 0, dragStartTY = 0;
+  let sandboxReady = false;
+  let pendingCallbacks = {};
+  let callId = 0;
 
   // DOM
   const loading = document.getElementById("loading");
@@ -34,6 +34,9 @@
   const fileInput = document.getElementById("file-input");
   const dropZone = document.getElementById("drop-zone");
 
+  // Sandbox iframe
+  const sandbox = document.getElementById("sandbox-frame");
+
   function showError(msg) {
     errorMessage.textContent = msg;
     errorOverlay.classList.remove("hidden");
@@ -41,30 +44,66 @@
 
   function setLoading(visible, status) {
     if (status) loadingStatus.textContent = status;
-    if (visible) {
-      loading.classList.remove("hidden");
-    } else {
-      loading.classList.add("hidden");
-    }
+    if (visible) loading.classList.remove("hidden");
+    else loading.classList.add("hidden");
   }
 
-  // ---- Pyodide setup ----
+  // Send message to sandbox and return promise
+  function sandboxCall(type, data) {
+    return new Promise((resolve, reject) => {
+      const id = ++callId;
+      pendingCallbacks[id] = { resolve, reject };
+      const msg = { type, id };
+      if (data !== undefined) msg.data = data;
+      sandbox.contentWindow.postMessage(msg, "*");
+    });
+  }
+
+  // Listen for sandbox messages
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (!msg || !msg.type) return;
+
+    if (msg.type === "sandbox-ready") {
+      sandboxReady = true;
+      return;
+    }
+
+    const cb = pendingCallbacks[msg.id];
+    if (!cb) return;
+    delete pendingCallbacks[msg.id];
+
+    if (msg.type === "error") {
+      cb.reject(new Error(msg.error));
+    } else if (msg.type === "init-done") {
+      cb.resolve();
+    } else if (msg.type === "convert-done") {
+      cb.resolve(msg.result);
+    }
+  });
+
+  // Wait for sandbox ready
+  function waitForSandbox() {
+    if (sandboxReady) return Promise.resolve();
+    return new Promise((resolve) => {
+      const handler = (event) => {
+        if (event.data && event.data.type === "sandbox-ready") {
+          sandboxReady = true;
+          window.removeEventListener("message", handler);
+          resolve();
+        }
+      };
+      window.addEventListener("message", handler);
+    });
+  }
+
+  // ---- Init Pyodide via sandbox ----
   async function initPyodide() {
-    setLoading(true, "Downloading Pyodide runtime…");
-    const script = document.createElement("script");
-    script.src = PYODIDE_CDN + "pyodide.js";
-    document.head.appendChild(script);
-    await new Promise((res, rej) => { script.onload = res; script.onerror = rej; });
+    setLoading(true, "Waiting for sandbox…");
+    await waitForSandbox();
 
     setLoading(true, "Initializing Python runtime…");
-    pyodide = await loadPyodide({ indexURL: PYODIDE_CDN });
-
-    setLoading(true, "Installing libvisio-ng…");
-    await pyodide.loadPackage("micropip");
-    await pyodide.runPythonAsync(`
-import micropip
-await micropip.install("libvisio-ng")
-`);
+    await sandboxCall("init");
     setLoading(false);
   }
 
@@ -72,29 +111,11 @@ await micropip.install("libvisio-ng")
   async function convertFile(arrayBuffer, filename) {
     setLoading(true, "Parsing Visio file…");
     try {
-      // Write file to Pyodide virtual FS
-      const uint8 = new Uint8Array(arrayBuffer);
-      pyodide.FS.writeFile("/tmp/input.vsdx", uint8);
-
-      // Convert
-      const result = await pyodide.runPythonAsync(`
-import json, os
-from libvisio_ng import convert, get_page_info
-
-pages_info = get_page_info("/tmp/input.vsdx")
-page_names = [p.get("name", f"Page {p['index']+1}") for p in pages_info]
-
-svg_files = convert("/tmp/input.vsdx", output_dir="/tmp/svg_out")
-svgs = []
-for f in svg_files:
-    with open(f, "r") as fh:
-        svgs.append(fh.read())
-
-json.dumps({"svgs": svgs, "names": page_names})
-`);
-      const data = JSON.parse(result);
-      svgPages = data.svgs;
-      pageNames = data.names;
+      // Transfer as ArrayBuffer
+      const data = Array.from(new Uint8Array(arrayBuffer));
+      const result = await sandboxCall("convert", data);
+      svgPages = result.svgs;
+      pageNames = result.names;
 
       if (svgPages.length === 0) {
         showError("No pages found in the Visio file.");
@@ -119,7 +140,6 @@ json.dumps({"svgs": svgs, "names": page_names})
     currentPage = idx;
     svgContainer.innerHTML = svgPages[idx];
     updatePageControls();
-    // Apply current transform
     applyTransform();
   }
 
@@ -147,12 +167,8 @@ json.dumps({"svgs": svgs, "names": page_names})
     if (!svg) return;
     const vw = viewport.clientWidth;
     const vh = viewport.clientHeight;
-    const sw = svg.getBoundingClientRect().width / scale || svg.clientWidth || 800;
-    const sh = svg.getBoundingClientRect().height / scale || svg.clientHeight || 600;
-    // Get natural size
-    const natW = svg.viewBox?.baseVal?.width || sw;
-    const natH = svg.viewBox?.baseVal?.height || sh;
-
+    const natW = svg.viewBox?.baseVal?.width || svg.clientWidth || 800;
+    const natH = svg.viewBox?.baseVal?.height || svg.clientHeight || 600;
     const fitScale = Math.min((vw - 40) / natW, (vh - 40) / natH, 2);
     scale = fitScale;
     translateX = (vw - natW * scale) / 2;

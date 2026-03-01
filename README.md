@@ -1,72 +1,53 @@
 # Visio Viewer — Chrome Extension
 
-View Microsoft Visio (.vsdx) files directly in Chrome without needing Visio installed.
-
-Uses [libvisio-ng](https://github.com/yeager/libvisio-ng) running via [Pyodide](https://pyodide.org/) (Python in WebAssembly) for fully client-side rendering — no server required.
+View Microsoft Visio (.vsdx) files directly in Chrome using [libvisio-ng](https://github.com/nicoptere/libvisio-ng) and [Pyodide](https://pyodide.org/).
 
 ## Features
 
-- **Open .vsdx files** via drag & drop, file picker, or direct URL
-- **SVG rendering** — crisp vector output at any zoom level
-- **Zoom & pan** — scroll to zoom, drag to pan, zoom-to-fit button
-- **Multi-page support** — navigate between pages with arrow buttons or keyboard
-- **Light/dark theme** — follows your system preference
-- **Zero server dependencies** — everything runs in the browser
+- Open `.vsdx` files via drag & drop, file picker, or by clicking download links
+- Multi-page navigation with page names
+- Pan, zoom (mouse wheel), and zoom-to-fit
+- Keyboard shortcuts: ← → for pages, +/- for zoom, 0 for fit
+- **Fully offline** — Pyodide and all dependencies are bundled locally
+
+## Architecture
+
+The extension uses a **sandboxed iframe** approach to run Pyodide:
+
+- `viewer.html` — Main UI with toolbar, viewport, and controls
+- `sandbox.html` — Sandboxed page with relaxed CSP that loads Pyodide + libvisio-ng
+- Communication between viewer and sandbox via `postMessage`
+- This avoids MV3 Content Security Policy restrictions on `eval()` and WASM
 
 ## Installation
 
 1. Clone or download this repository
 2. Open `chrome://extensions/` in Chrome
-3. Enable **Developer mode** (top right toggle)
-4. Click **Load unpacked** and select this folder
-5. The Visio Viewer extension icon appears in your toolbar
+3. Enable **Developer mode** (top right)
+4. Click **Load unpacked** and select the extension folder
+5. The extension is ~15MB due to bundled Pyodide runtime
 
 ## Usage
 
-### Drag & drop
-Open the extension page (`viewer.html`) and drag a `.vsdx` file onto the window.
+- **Drag & drop** a `.vsdx` file onto the viewer
+- **Click the folder icon** in the toolbar to open a file picker
+- **Click a `.vsdx` download link** — the extension intercepts it and opens the viewer
 
-### File picker
-Click the folder icon in the toolbar to browse for a file.
+## Bundled Dependencies
 
-### Direct URL
-The extension intercepts `.vsdx` file downloads and opens them in the viewer automatically.
+- Pyodide v0.26.4 (Python runtime compiled to WebAssembly)
+- micropip (Python package installer for Pyodide)
+- libvisio-ng (Visio file parser)
+- olefile (OLE2 file parser, dependency of libvisio-ng)
 
-### Keyboard shortcuts
-
-| Key | Action |
-|-----|--------|
-| `←` / `→` | Previous / next page |
-| `+` / `-` | Zoom in / out |
-| `0` | Zoom to fit |
-
-## How It Works
-
-1. Extension loads [Pyodide](https://pyodide.org/) (Python WASM runtime) from CDN
-2. Installs `libvisio-ng` via `micropip`
-3. Parses the `.vsdx` file (which is a ZIP of XML) using libvisio-ng's built-in parser
-4. Renders each page as SVG
-5. Displays SVG with interactive zoom/pan controls
-
-First load takes a few seconds while Pyodide initializes. Subsequent file opens are fast.
-
-## Technical Details
-
-- Chrome Extension Manifest V3
-- No external dependencies beyond Pyodide CDN
-- All processing happens client-side
-- Supports `.vsdx`, `.vsdm` formats (XML-based Visio files)
+All dependencies are bundled in the `pyodide/` directory — no internet connection required.
 
 ## Development
 
-```bash
-# Clone
-git clone https://github.com/yeager/visio-viewer-extension
-cd visio-viewer-extension
-
-# Load in Chrome as unpacked extension
-# Make changes, then reload extension in chrome://extensions/
-```
+To update Pyodide:
+1. Download the release from https://github.com/pyodide/pyodide/releases
+2. Extract only the core files: `pyodide.js`, `pyodide.asm.js`, `pyodide.asm.wasm`, `pyodide-lock.json`, `package.json`, `python_stdlib.zip`
+3. Place in `pyodide/` directory along with the wheel files
 
 ## License
 
