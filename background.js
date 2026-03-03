@@ -10,11 +10,3 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
     suggest({ filename: item.filename });
   }
 });
-
-// Also handle when user clicks on .vsdx links
-chrome.webNavigation?.onBeforeNavigate?.addListener((details) => {
-  if (details.url && details.url.toLowerCase().endsWith('.vsdx')) {
-    const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(details.url);
-    chrome.tabs.update(details.tabId, { url: viewerUrl });
-  }
-}, { url: [{ urlSuffix: '.vsdx' }] });
