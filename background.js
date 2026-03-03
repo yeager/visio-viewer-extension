@@ -5,7 +5,7 @@ let pendingFileData = null;
 // Track tabs we've already redirected to avoid loops
 const redirectedTabs = new Set();
 
-// Universal handler for .vsdx URLs
+// Handle .vsdx URL: redirect tab to viewer
 function handleVsdxUrl(tabId, url) {
   if (redirectedTabs.has(tabId)) return;
   if (!url || !url.toLowerCase().endsWith('.vsdx')) return;
@@ -14,29 +14,11 @@ function handleVsdxUrl(tabId, url) {
   redirectedTabs.add(tabId);
   setTimeout(() => redirectedTabs.delete(tabId), 10000);
 
-  // Pass all URLs (including file://) with ?url= parameter
-  // The viewer will try to fetch via background service worker first,
-  // and fall back to file picker prompt if that fails
   const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(url);
   chrome.tabs.update(tabId, { url: viewerUrl });
 }
 
-// Multiple event listeners to catch .vsdx URLs at various stages
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
-
-chrome.webNavigation.onCommitted.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
-
-chrome.webNavigation.onCompleted.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
-
+// Use tabs.onUpdated to detect .vsdx navigation (no webNavigation permission needed)
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.url) {
     handleVsdxUrl(tabId, changeInfo.url);
