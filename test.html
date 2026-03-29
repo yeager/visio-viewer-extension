@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Visio Viewer</title>
+    <script src="jszip.min.js"></script>
+    <script src="libvisio.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .result { margin-top: 10px; padding: 10px; background: #f0f0f0; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Visio Viewer Test</h1>
+    
+    <div class="test">
+        <h2>Test 1: JSZip loaded?</h2>
+        <div id="test1" class="result">Running...</div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 2: VisioConverter loaded?</h2>
+        <div id="test2" class="result">Running...</div>
+    </div>
+    
+    <div class="test">
+        <h2>Test 3: File input test</h2>
+        <input type="file" id="fileInput" accept=".vsdx">
+        <div id="test3" class="result">Select a .vsdx file to test</div>
+    </div>
+
+    <script>
+        // Test 1: JSZip
+        document.getElementById('test1').innerHTML = 
+            typeof JSZip !== 'undefined' ? 
+            '<span class="success">✓ JSZip loaded successfully</span>' :
+            '<span class="error">✗ JSZip not loaded</span>';
+
+        // Test 2: VisioConverter  
+        document.getElementById('test2').innerHTML = 
+            typeof VisioConverter !== 'undefined' ? 
+            '<span class="success">✓ VisioConverter loaded successfully</span>' :
+            '<span class="error">✗ VisioConverter not loaded</span>';
+
+        // Test 3: File input
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const result = document.getElementById('test3');
+            result.innerHTML = 'Processing file...';
+            
+            try {
+                const converter = new VisioConverter();
+                const buffer = await file.arrayBuffer();
+                await converter.loadFromArrayBuffer(buffer);
+                
+                const pages = converter.getPages();
+                result.innerHTML = `<span class="success">✓ Successfully parsed ${pages.length} page(s):<br>` + 
+                    pages.map(p => `- ${p.name} (${p.width}"x${p.height}")`).join('<br>') + '</span>';
+                
+                // Try to render first page
+                if (pages.length > 0) {
+                    const svg = converter.renderPage(0);
+                    result.innerHTML += '<br><br>SVG preview:<br>' + 
+                        '<div style="border:1px solid #ccc; max-height:400px; overflow:auto;">' + 
+                        svg + '</div>';
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">✗ Error: ${error.message}</span>`;
+                console.error('Test error:', error);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,10 +1,9 @@
-/* Visio Viewer — Sandboxed Pyodide + libvisio-ng */
+/* Visio Viewer — Pure JavaScript + libvisio.js */
 (function () {
   "use strict";
 
   // State
-  let svgPages = [];
-  let pageNames = [];
+  let converter = null;
   let currentPage = 0;
   let scale = 1;
   let translateX = 0;
@@ -12,9 +11,6 @@
   let isDragging = false;
   let dragStartX = 0, dragStartY = 0;
   let dragStartTX = 0, dragStartTY = 0;
-  let sandboxReady = false;
-  let pendingCallbacks = {};
-  let callId = 0;
 
   // DOM
   const loading = document.getElementById("loading");
@@ -34,9 +30,6 @@
   const fileInput = document.getElementById("file-input");
   const dropZone = document.getElementById("drop-zone");
 
-  // Sandbox iframe
-  const sandbox = document.getElementById("sandbox-frame");
-
   function showError(msg) {
     errorMessage.textContent = msg;
     errorOverlay.classList.remove("hidden");
@@ -48,76 +41,18 @@
     else loading.classList.add("hidden");
   }
 
-  // Send message to sandbox and return promise
-  function sandboxCall(type, data) {
-    return new Promise((resolve, reject) => {
-      const id = ++callId;
-      pendingCallbacks[id] = { resolve, reject };
-      const msg = { type, id };
-      if (data !== undefined) msg.data = data;
-      sandbox.contentWindow.postMessage(msg, "*");
-    });
-  }
-
-  // Listen for sandbox messages
-  window.addEventListener("message", (event) => {
-    const msg = event.data;
-    if (!msg || !msg.type) return;
-
-    if (msg.type === "sandbox-ready") {
-      sandboxReady = true;
-      return;
-    }
-
-    const cb = pendingCallbacks[msg.id];
-    if (!cb) return;
-    delete pendingCallbacks[msg.id];
-
-    if (msg.type === "error") {
-      cb.reject(new Error(msg.error));
-    } else if (msg.type === "init-done") {
-      cb.resolve();
-    } else if (msg.type === "convert-done") {
-      cb.resolve(msg.result);
-    }
-  });
-
-  // Wait for sandbox ready
-  function waitForSandbox() {
-    if (sandboxReady) return Promise.resolve();
-    return new Promise((resolve) => {
-      const handler = (event) => {
-        if (event.data && event.data.type === "sandbox-ready") {
-          sandboxReady = true;
-          window.removeEventListener("message", handler);
-          resolve();
-        }
-      };
-      window.addEventListener("message", handler);
-    });
-  }
-
-  // ---- Init Pyodide via sandbox ----
-  async function initPyodide() {
-    setLoading(true, "Waiting for sandbox…");
-    await waitForSandbox();
-
-    setLoading(true, "Initializing Python runtime…");
-    await sandboxCall("init");
-    setLoading(false);
-  }
-
   // ---- Convert .vsdx to SVG pages ----
   async function convertFile(arrayBuffer, filename) {
     setLoading(true, "Parsing Visio file…");
     try {
-      // Transfer as ArrayBuffer
-      const data = Array.from(new Uint8Array(arrayBuffer));
-      const result = await sandboxCall("convert", data);
-      svgPages = result.svgs;
-      pageNames = result.names;
-
-      if (svgPages.length === 0) {
+      // Create new converter instance
+      converter = new VisioConverter();
+      
+      // Load and parse the VSDX file
+      await converter.loadFromArrayBuffer(arrayBuffer);
+      
+      const pages = converter.getPages();
+      if (pages.length === 0) {
         showError("No pages found in the Visio file.");
         setLoading(false);
         return;
@@ -131,26 +66,40 @@
       setLoading(false);
     } catch (e) {
       setLoading(false);
+      console.error("Conversion error:", e);
       showError("Failed to parse file: " + (e.message || e));
     }
   }
 
   // ---- Render SVG ----
   function renderPage(idx) {
+    if (!converter) return;
+    
     currentPage = idx;
-    svgContainer.innerHTML = svgPages[idx];
-    updatePageControls();
-    applyTransform();
+    try {
+      const svgContent = converter.renderPage(idx);
+      svgContainer.innerHTML = svgContent;
+      updatePageControls();
+      applyTransform();
+    } catch (e) {
+      console.error("Render error:", e);
+      showError("Failed to render page: " + e.message);
+    }
   }
 
   function updatePageControls() {
-    const total = svgPages.length;
+    if (!converter) return;
+    
+    const pages = converter.getPages();
+    const total = pages.length;
+    
     if (total <= 1) {
-      pageInfo.textContent = pageNames[currentPage] || "—";
+      pageInfo.textContent = pages[currentPage]?.name || "—";
       prevBtn.disabled = true;
       nextBtn.disabled = true;
     } else {
-      pageInfo.textContent = `${pageNames[currentPage] || (currentPage + 1)} (${currentPage + 1}/${total})`;
+      const pageName = pages[currentPage]?.name || (currentPage + 1);
+      pageInfo.textContent = `${pageName} (${currentPage + 1}/${total})`;
       prevBtn.disabled = currentPage === 0;
       nextBtn.disabled = currentPage === total - 1;
     }
@@ -218,8 +167,18 @@
   zoomInBtn.addEventListener("click", () => zoomBy(1.25));
   zoomOutBtn.addEventListener("click", () => zoomBy(0.8));
   zoomFitBtn.addEventListener("click", zoomToFit);
-  prevBtn.addEventListener("click", () => { if (currentPage > 0) { renderPage(currentPage - 1); zoomToFit(); } });
-  nextBtn.addEventListener("click", () => { if (currentPage < svgPages.length - 1) { renderPage(currentPage + 1); zoomToFit(); } });
+  prevBtn.addEventListener("click", () => { 
+    if (currentPage > 0) { 
+      renderPage(currentPage - 1); 
+      zoomToFit(); 
+    } 
+  });
+  nextBtn.addEventListener("click", () => { 
+    if (converter && currentPage < converter.getPages().length - 1) { 
+      renderPage(currentPage + 1); 
+      zoomToFit(); 
+    } 
+  });
 
   // ---- File input ----
   fileInput.addEventListener("change", async (e) => {
@@ -356,7 +315,21 @@
 
   // ---- Init ----
   async function main() {
-    await initPyodide();
+    setLoading(true, "Initializing viewer…");
+    
+    // Check if JSZip is available
+    if (typeof JSZip === 'undefined') {
+      showError("JSZip library not loaded. Please check your installation.");
+      setLoading(false);
+      return;
+    }
+    
+    // Check if VisioConverter is available
+    if (typeof VisioConverter === 'undefined') {
+      showError("VisioConverter library not loaded. Please check your installation.");
+      setLoading(false);
+      return;
+    }
 
     const params = new URLSearchParams(location.search);
     const source = params.get("source");

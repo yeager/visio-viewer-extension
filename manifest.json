@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Visio Viewer",
-  "version": "1.2.1",
-  "description": "View Microsoft Visio (.vsdx) files directly in Chrome using libvisio-ng",
+  "version": "2.0.0",
+  "description": "View Microsoft Visio (.vsdx) files directly in Chrome using pure JavaScript",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -29,16 +29,9 @@
       "run_at": "document_start"
     }
   ],
-  "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
-    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; object-src 'self'"
-  },
-  "sandbox": {
-    "pages": ["sandbox.html"]
-  },
   "web_accessible_resources": [
     {
-      "resources": ["viewer.html", "pyodide/*"],
+      "resources": ["viewer-new.html", "jszip.min.js", "libvisio.js"],
       "matches": ["<all_urls>"]
     }
   ]

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visio Viewer</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <!-- Loading overlay -->
+  <div id="loading" class="loading-overlay">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading Pyodide…</p>
+    <p class="loading-sub" id="loading-status"></p>
+  </div>
+
+  <!-- Error overlay -->
+  <div id="error-overlay" class="error-overlay hidden">
+    <div class="error-box">
+      <h2>⚠️ Error</h2>
+      <p id="error-message"></p>
+      <button onclick="document.getElementById('error-overlay').classList.add('hidden')">Dismiss</button>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <svg class="logo" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M9 3v18"/>
+      </svg>
+      <span class="title" id="file-title">Visio Viewer</span>
+    </div>
+    <div class="toolbar-center">
+      <button id="prev-page" title="Previous page" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M10.5 2.5L5 8l5.5 5.5"/></svg>
+      </button>
+      <span id="page-info">—</span>
+      <button id="next-page" title="Next page" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5.5 2.5L11 8l-5.5 5.5"/></svg>
+      </button>
+    </div>
+    <div class="toolbar-right">
+      <button id="zoom-in" title="Zoom in">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M7 3v4H3v2h4v4h2V9h4V7H9V3z"/></svg>
+      </button>
+      <span id="zoom-level">100%</span>
+      <button id="zoom-out" title="Zoom out">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 7h10v2H3z"/></svg>
+      </button>
+      <button id="zoom-fit" title="Zoom to fit">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h4v2H4v2H2zm8 0h4v4h-2V4h-2zm-8 8h2v2h2v2H2zm10 2v-2h2v4h-4v-2z"/></svg>
+      </button>
+      <div class="separator"></div>
+      <label class="file-input-label" title="Open .vsdx file">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5l2 2h5v10H2zm2 2v8h8V6H8.5L6.5 4z"/></svg>
+        <input type="file" id="file-input" accept=".vsdx,.vsd,.vsdm" hidden>
+      </label>
+      <button id="open-url" title="Open .vsdx from URL">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM6.5 3.5C5.2 5 4.5 6.5 4.5 8s.7 3 2 4.5c-.3 0-.6.03-.9.03A5.5 5.5 0 012.5 8a5.5 5.5 0 013.1-4.97c.3 0 .6.03.9.03zM8 2.5c-1.5 1.5-2.3 3.2-2.3 5.5S6.5 12 8 13.5c1.5-1.5 2.3-3.2 2.3-5.5S9.5 4 8 2.5zm2.4 1c1.9 1 3.1 2.9 3.1 4.97a5.5 5.5 0 01-3.1 4.97c1.3-1.5 2-3 2-4.5s-.7-3-2-4.44z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SVG viewport -->
+  <div id="viewport" class="viewport">
+    <div id="svg-container" class="svg-container"></div>
+    <!-- Drop zone -->
+    <div id="drop-zone" class="drop-zone hidden">
+      <p>Drop .vsdx file here</p>
+    </div>
+  </div>
+
+  <iframe id="sandbox-frame" src="sandbox.html" style="display:none" sandbox="allow-scripts"></iframe>
+  <script src="viewer.js"></script>
+</body>
+</html>
