@@ -15,7 +15,6 @@
   "permissions": [
     "downloads",
     "webNavigation",
-    "scripting",
     "tabs"
   ],
   "host_permissions": [
