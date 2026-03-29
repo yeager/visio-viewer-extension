@@ -300,7 +300,7 @@ class VisioConverter {
         const geometry = [];
         
         geomNode.childNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.nodeType === 1 /* Node.ELEMENT_NODE */) {
                 const type = node.nodeName;
                 const row = { type };
                 

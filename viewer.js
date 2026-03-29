@@ -17,6 +17,8 @@
   const loadingStatus = document.getElementById("loading-status");
   const errorOverlay = document.getElementById("error-overlay");
   const errorMessage = document.getElementById("error-message");
+  const welcome = document.getElementById("welcome");
+  const welcomeOpen = document.getElementById("welcome-open");
   const fileTitle = document.getElementById("file-title");
   const pageInfo = document.getElementById("page-info");
   const prevBtn = document.getElementById("prev-page");
@@ -43,6 +45,7 @@
 
   // ---- Convert .vsdx to SVG pages ----
   async function convertFile(arrayBuffer, filename) {
+    if (welcome) welcome.classList.add("hidden");
     setLoading(true, "Parsing Visio file…");
     try {
       // Create new converter instance
@@ -179,6 +182,21 @@
       zoomToFit(); 
     } 
   });
+
+  // ---- Welcome screen ----
+  if (welcomeOpen) {
+    welcomeOpen.addEventListener("click", () => fileInput.click());
+  }
+  if (welcome) {
+    welcome.addEventListener("dragover", (e) => e.preventDefault());
+    welcome.addEventListener("drop", async (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const buf = await file.arrayBuffer();
+      await convertFile(buf, file.name);
+    });
+  }
 
   // ---- File input ----
   fileInput.addEventListener("change", async (e) => {
@@ -353,7 +371,9 @@
     } else if (url) {
       await openFromUrl(url);
     } else {
+      // No source — show welcome screen
       setLoading(false);
+      if (welcome) welcome.classList.remove("hidden");
     }
   }
 

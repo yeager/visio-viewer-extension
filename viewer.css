@@ -199,3 +199,17 @@ body {
 }
 .file-prompt-btn:hover { background: #74c7ec; }
 .file-prompt-hint { font-size: 0.85rem; color: #888; }
+
+/* Welcome screen */
+.welcome-screen {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: #f5f5f5; z-index: 50;
+}
+.welcome-box {
+  text-align: center; padding: 48px; background: white;
+  border-radius: 12px; box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+}
+.welcome-box h2 { margin: 16px 0 8px; color: #333; }
+.welcome-box p { color: #666; margin: 0; }
+.welcome-screen.hidden { display: none; }
