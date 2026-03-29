@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+xmlns:xlink="http://www.w3.org/1999/xlink" 
+width="612" height="792" 
+viewBox="0 0 612 792">
+<rect x="0" y="0" width="612" height="792" fill="white"/>
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.2)"/>
+</filter>
+<linearGradient id="grad_1_25" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#0000FF"/><stop offset="100%" stop-color="#FF0000"/></linearGradient>
+<radialGradient id="grad_2_29" cx="50%" cy="50%" r="50%" fx="50%" fy="50%"><stop offset="0%" stop-color="#FFFF00"/><stop offset="100%" stop-color="#00FF00"/></radialGradient>
+</defs>
+<path d="M 0.00 144.00 L 144.00 144.00 L 144.00 0.00 L 0.00 0.00 L 0.00 144.00 Z" fill="url(#grad_1_25)" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(108.00,360.00)"/>
+<path d="M 0.00 144.00 L 144.00 144.00 L 144.00 0.00 L 0.00 0.00 L 0.00 144.00 Z" fill="url(#grad_2_29)" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(324.00,360.00)"/>
+<!-- Text layer -->
+<text x="180.00" y="432.00" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#FFFFFF">Linear</text>
+<text x="396.00" y="432.00" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Radial</text>
+</svg>

@@ -1210,6 +1210,31 @@ class VisioConverter {
             }
         }
         
+        // FIX: Add connector text labels with background
+        if (shape.text && shape.text.trim()) {
+            const midX = (beginX + endX) / 2;
+            const midY = (beginY + endY) / 2;
+            const text = shape.text.trim();
+            const fontSize = 8;
+            const padding = 2;
+            const textWidth = text.length * fontSize * 0.5;
+            const textHeight = fontSize + padding * 2;
+            
+            // Semi-transparent background
+            elements.push(
+                '<rect x="' + (midX - textWidth/2 - padding) + '" y="' + (midY - textHeight/2) + 
+                '" width="' + (textWidth + padding*2) + '" height="' + textHeight + 
+                '" fill="white" fill-opacity="0.55" rx="1"/>'
+            );
+            
+            // Text
+            elements.push(
+                '<text x="' + midX.toFixed(2) + '" y="' + midY.toFixed(2) + 
+                '" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="' + 
+                fontSize + '" fill="#000000">' + this.escapeXml(text) + '</text>'
+            );
+        }
+        
         return elements;
     }
 
@@ -2827,6 +2852,37 @@ class VisioConverter {
                 `<path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="${strokeWidth.toFixed(2)}"` +
                 (dashArray ? ` stroke-dasharray="${dashArray}"` : '') +
                 markerAttrs + ` transform="${transform}"/>`
+            );
+        }
+        
+        // FIX: Add connector text labels with background for geometry connectors
+        if (shape.text && shape.text.trim()) {
+            // Calculate midpoint from connector endpoints
+            const beginX = this.safeFloat(this.getCellVal(shape, "BeginX")) * this.INCH_TO_PX;
+            const beginY = (pageH - this.safeFloat(this.getCellVal(shape, "BeginY"))) * this.INCH_TO_PX;
+            const endX = this.safeFloat(this.getCellVal(shape, "EndX")) * this.INCH_TO_PX;
+            const endY = (pageH - this.safeFloat(this.getCellVal(shape, "EndY"))) * this.INCH_TO_PX;
+            
+            const midX = (beginX + endX) / 2;
+            const midY = (beginY + endY) / 2;
+            const text = shape.text.trim();
+            const fontSize = 8;
+            const padding = 2;
+            const textWidth = text.length * fontSize * 0.5;
+            const textHeight = fontSize + padding * 2;
+            
+            // Semi-transparent background
+            elements.push(
+                '<rect x="' + (midX - textWidth/2 - padding) + '" y="' + (midY - textHeight/2) + 
+                '" width="' + (textWidth + padding*2) + '" height="' + textHeight + 
+                '" fill="white" fill-opacity="0.55" rx="1"/>'
+            );
+            
+            // Text
+            elements.push(
+                '<text x="' + midX.toFixed(2) + '" y="' + midY.toFixed(2) + 
+                '" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="' + 
+                fontSize + '" fill="#000000">' + this.escapeXml(text) + '</text>'
             );
         }
         

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+xmlns:xlink="http://www.w3.org/1999/xlink" 
+width="778" height="792" 
+viewBox="0 0 778 792">
+<rect x="0" y="0" width="778" height="792" fill="white"/>
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.2)"/>
+</filter>
+<marker id="arrow_end_3_000000" markerWidth="12.0" markerHeight="8.4" refX="12.0" refY="4.2" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 12.0 4.2, 0 8.4" fill="#000000"/></marker>
+<marker id="arrow_end_3_ff6600" markerWidth="12.0" markerHeight="8.4" refX="12.0" refY="4.2" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 12.0 4.2, 0 8.4" fill="#ff6600"/></marker>
+</defs>
+<g transform="translate(153.00,330.03)">
+<path d="M 0.00 16.00 A 16.00 16.00 0 1 0 32.00 16.00 A 16.00 16.00 0 1 0 0.00 16.00 Z" fill="#008000" stroke="#000000" stroke-width="1.50" filter="url(#shadow)"/>
+</g>
+<g transform="translate(230.00,308.03)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ffffff" stroke="#ff6600" stroke-width="1.50" filter="url(#shadow)"/>
+</g>
+<g transform="translate(788.00,328.03)">
+<path d="M 1.44 18.00 A 16.56 16.56 0 1 0 34.56 18.00 A 16.56 16.56 0 1 0 1.44 18.00 Z" fill="#ffffff" stroke="#000000" stroke-width="5.76" filter="url(#shadow)"/>
+</g>
+<g transform="translate(416.00,308.03)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ff00ff" stroke="#00ff00" stroke-width="1.50" filter="url(#shadow)"/>
+</g>
+<g transform="translate(602.00,308.03)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ffffff" stroke="#000000" stroke-width="1.50" filter="url(#shadow)"/>
+</g>
+<path d="M 0.00 7.09 L 46.00 7.09" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)" transform="translate(184.00,338.94)"/>
+<path d="M 0.00 7.09 L 92.00 7.09" fill="none" stroke="#ff6600" stroke-width="1.50" marker-end="url(#arrow_end_3_ff6600)" transform="translate(325.00,338.94)"/>
+<path d="M 0.00 7.09 L 91.00 7.09" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)" transform="translate(697.00,338.94)"/>
+<path d="M 0.00 7.09 L 92.00 7.09" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)" transform="translate(511.00,338.94)"/>
+<!-- Text layer -->
+<text x="169.00" y="346.03" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">Green Fill</text>
+<text x="278.00" y="346.03" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">Orange Border</text>
+<text x="806.00" y="346.03" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#ff0000">Red Font</text>
+<text x="464.00" y="336.43" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff">Pink Fill</text>
+<text x="464.00" y="346.03" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff">Green Border</text>
+<text x="464.00" y="355.63" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff">Blue Font</text>
+<text x="650.00" y="346.03" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">No Color</text>
+</svg>

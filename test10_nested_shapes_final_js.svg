@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+xmlns:xlink="http://www.w3.org/1999/xlink" 
+width="612" height="792" 
+viewBox="0 -80 612 792">
+<rect x="0" y="-80" width="612" height="792" fill="white"/>
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.2)"/>
+</filter>
+<linearGradient id="grad_8_auto" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#b8a9c9"/><stop offset="100%" stop-color="#ab9ac0"/></linearGradient>
+</defs>
+<g transform="translate(56.69,26.65)">
+<g transform="translate(0.00,0.00)">
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,36.85)"/>
+</g>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,36.85)"/>
+<g transform="translate(130.39,0.00)">
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,36.85)"/>
+</g>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(0.00,36.85)"/>
+</g>
+<path d="M 0.00 28.35 L 226.77 28.35 L 226.77 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="url(#grad_8_auto)" stroke="#333333" stroke-width="0.72"  filter="url(#shadow)" transform="translate(56.69,-30.05)"/>
+<!-- Text layer -->
+<text x="48.19" y="14.17" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.1.1</text>
+<text x="48.19" y="51.02" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.1.2</text>
+<text x="48.19" y="32.60" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.1</text>
+<text x="48.19" y="51.37" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.1.1</text>
+<text x="48.19" y="63.42" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.1.2</text>
+<text x="48.19" y="51.37" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.2.1</text>
+<text x="48.19" y="75.82" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.2.2</text>
+<text x="178.58" y="32.60" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.2</text>
+<text x="48.19" y="51.37" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.2.1</text>
+<text x="48.19" y="88.22" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1.2.2</text>
+<text x="170.08" y="59.24" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape 1</text>
+<text x="170.08" y="-15.87" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Nested Shape Example</text>
+</svg>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" 
+xmlns:xlink="http://www.w3.org/1999/xlink" 
+width="612" height="792" 
+viewBox="-50 0 612 792">
+<rect x="-50" y="0" width="612" height="792" fill="white"/>
+<defs>
+<filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.2)"/>
+</filter>
+<marker id="arrow_end_2_5E5E5E" markerWidth="10.0" markerHeight="7.0" refX="10.0" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 10.0 3.5, 0 7.0" fill="#5E5E5E"/></marker>
+<linearGradient id="grad_1_auto" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+<linearGradient id="grad_2_auto" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+<linearGradient id="grad_3_auto" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+<linearGradient id="grad_4_auto" x1="0.0%" y1="50.0%" x2="100.0%" y2="50.0%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#FFFFFF"/></linearGradient>
+</defs>
+<g transform="translate(54.00,738.00)">
+<path d="M 0.00 2.70 L 69.30 0.00 L 72.00 51.30 L 2.70 54.00 L 0.00 2.70 Z" fill="url(#grad_1_auto)" stroke="#5e5e5e" stroke-width="1.35" filter="url(#shadow)"/>
+<path d="M 0.00 2.70 L 69.30 0.00 L 72.00 51.30 L 2.70 54.00 L 0.00 2.70 Z" fill="url(#grad_2_auto)" stroke="#5e5e5e" stroke-width="1.35"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+</g>
+<g transform="translate(0.00,738.00)">
+<path d="M 0.00 2.70 L 69.30 0.00 L 72.00 51.30 L 2.70 54.00 L 0.00 2.70 Z" fill="url(#grad_3_auto)" stroke="#5e5e5e" stroke-width="1.35" filter="url(#shadow)"/>
+<path d="M 0.00 2.70 L 69.30 0.00 L 72.00 51.30 L 2.70 54.00 L 0.00 2.70 Z" fill="url(#grad_4_auto)" stroke="#5e5e5e" stroke-width="1.35"  filter="url(#shadow)" transform="translate(0.00,0.00)"/>
+</g>
+<path d="M 0.00 0.00 L 133.65 0.00" fill="none" stroke="#5E5E5E" stroke-width="1.50" marker-end="url(#arrow_end_2_5E5E5E)" transform="translate(126.68,252.00)"/>
+<path d="M 0.00 0.01 L -133.65 0.01" fill="none" stroke="#5E5E5E" stroke-width="1.50" marker-end="url(#arrow_end_2_5E5E5E)" transform="translate(260.32,260.40)"/>
+<path d="M 0.00 0.00 L 133.65 0.00" fill="none" stroke="#5E5E5E" stroke-width="1.50" marker-end="url(#arrow_end_2_5E5E5E)" transform="translate(126.68,270.00)"/>
+<!-- Text layer -->
+<text x="90.00" y="765.00" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#333333">Shape A</text>
+</svg>
