@@ -14,6 +14,7 @@ class VisioConverter {
         this.media = {};
         this.themeColors = {};
         this.zipFile = null;
+        this.isNodeJs = typeof window === 'undefined' || typeof window.document === 'undefined';
         
         // Constants from Python version
         this.VISIO_COLORS = {
@@ -71,6 +72,129 @@ class VisioConverter {
             "malgun gothic": "Noto Sans KR, sans-serif",
             "gulim": "Noto Sans KR, sans-serif"
         };
+    }
+
+    /**
+     * Parse XML with correct DOM methods for Node.js vs Browser
+     */
+    parseXml(xmlText) {
+        const parser = new DOMParser();
+        return parser.parseFromString(xmlText, "text/xml");
+    }
+
+    /**
+     * Query all elements - works with both browser and xmldom
+     */
+    querySelectorAll(element, selector) {
+        if (this.isNodeJs || !element.querySelectorAll) {
+            // For xmldom, use getElementsByTagNameNS or getElementsByTagName
+            if (selector === "Shape") {
+                return this.getElementsByTagNameRecursive(element, "Shape");
+            }
+            if (selector === "Cell") {
+                return this.getElementsByTagNameRecursive(element, "Cell");
+            }
+            if (selector === "Section") {
+                return this.getElementsByTagNameRecursive(element, "Section");
+            }
+            if (selector === "Row") {
+                return this.getElementsByTagNameRecursive(element, "Row");
+            }
+            if (selector === "Master") {
+                return this.getElementsByTagNameRecursive(element, "Master");
+            }
+            if (selector === "Relationship") {
+                return this.getElementsByTagNameRecursive(element, "Relationship");
+            }
+            if (selector === "Text") {
+                return this.getElementsByTagNameRecursive(element, "Text");
+            }
+            if (selector === "Shapes") {
+                return this.getElementsByTagNameRecursive(element, "Shapes");
+            }
+            if (selector === "ForeignData") {
+                return this.getElementsByTagNameRecursive(element, "ForeignData");
+            }
+            if (selector === "Rel") {
+                return this.getElementsByTagNameRecursive(element, "Rel");
+            }
+            if (selector === "Connect") {
+                return this.getElementsByTagNameRecursive(element, "Connect");
+            }
+            if (selector === "PageSheet") {
+                return this.getElementsByTagNameRecursive(element, "PageSheet");
+            }
+            if (selector === "Connects") {
+                return this.getElementsByTagNameRecursive(element, "Connects");
+            }
+            // Add more as needed
+            return [];
+        } else {
+            return element.querySelectorAll(selector);
+        }
+    }
+
+    /**
+     * Query single element - works with both browser and xmldom
+     */
+    querySelector(element, selector) {
+        if (this.isNodeJs || !element.querySelector) {
+            // For xmldom, use getElementsByTagNameNS or getElementsByTagName
+            const results = this.querySelectorAll(element, selector);
+            return results.length > 0 ? results[0] : null;
+        } else {
+            return element.querySelector(selector);
+        }
+    }
+
+    /**
+     * Get elements by tag name recursively (for xmldom)
+     */
+    getElementsByTagNameRecursive(element, tagName) {
+        const results = [];
+        
+        if (element.getElementsByTagName) {
+            const nodeList = element.getElementsByTagName(tagName);
+            for (let i = 0; i < nodeList.length; i++) {
+                results.push(nodeList[i]);
+            }
+        } else if (element.childNodes) {
+            // Manual traversal for xmldom
+            this.traverseForTag(element, tagName, results);
+        }
+        
+        return results;
+    }
+
+    /**
+     * Traverse DOM tree manually to find elements
+     */
+    traverseForTag(node, tagName, results) {
+        if (node.nodeType === 1 && node.tagName === tagName) {
+            results.push(node);
+        }
+        
+        if (node.childNodes) {
+            for (let i = 0; i < node.childNodes.length; i++) {
+                this.traverseForTag(node.childNodes[i], tagName, results);
+            }
+        }
+    }
+
+    /**
+     * Get direct children elements with specific tag name
+     */
+    getDirectChildren(element, tagName) {
+        const results = [];
+        if (element.childNodes) {
+            for (let i = 0; i < element.childNodes.length; i++) {
+                const child = element.childNodes[i];
+                if (child.nodeType === 1 && child.tagName === tagName) {
+                    results.push(child);
+                }
+            }
+        }
+        return results;
     }
 
     /**
@@ -174,15 +298,14 @@ class VisioConverter {
         let masterIdToFile = {};
         try {
             const mastersXml = await this.zipFile.file("visio/masters/masters.xml").async("text");
-            const parser = new DOMParser();
-            const root = parser.parseFromString(mastersXml, "text/xml");
+            const root = this.parseXml(mastersXml);
             
             // Parse rels to map rId -> filename
             const ridToFile = {};
             try {
                 const relsXml = await this.zipFile.file("visio/masters/_rels/masters.xml.rels").async("text");
-                const relsRoot = parser.parseFromString(relsXml, "text/xml");
-                const rels = relsRoot.querySelectorAll("Relationship");
+                const relsRoot = this.parseXml(relsXml);
+                const rels = this.querySelectorAll(relsRoot, "Relationship");
                 for (const rel of rels) {
                     const rid = rel.getAttribute("Id");
                     const target = rel.getAttribute("Target");
@@ -193,10 +316,10 @@ class VisioConverter {
                 }
             } catch (e) {}
             
-            const masterEls = root.querySelectorAll("Master");
+            const masterEls = this.querySelectorAll(root, "Master");
             for (const masterEl of masterEls) {
                 const mid = masterEl.getAttribute("ID");
-                const relEl = masterEl.querySelector("Rel");
+                const relEl = this.querySelector(masterEl, "Rel");
                 if (relEl) {
                     const rid = relEl.getAttribute("r:id") || relEl.getAttributeNS(this.NS.r, "id");
                     if (rid && ridToFile[rid]) {
@@ -220,11 +343,10 @@ class VisioConverter {
             
             try {
                 const xml = await this.zipFile.file(name).async("text");
-                const parser = new DOMParser();
-                const root = parser.parseFromString(xml, "text/xml");
+                const root = this.parseXml(xml);
                 
                 const shapesData = {};
-                const shapes = root.querySelectorAll("Shape");
+                const shapes = this.querySelectorAll(root, "Shape");
                 for (const shape of shapes) {
                     const sd = this.parseSingleShape(shape);
                     shapesData[sd.id] = sd;
@@ -285,7 +407,7 @@ class VisioConverter {
         };
         
         // Parse top-level cells
-        const cells = shapeElem.querySelectorAll(":scope > Cell");
+        const cells = this.getDirectChildren(shapeElem, "Cell");
         for (const cell of cells) {
             const n = cell.getAttribute("N");
             const v = cell.getAttribute("V") || "";
@@ -296,7 +418,7 @@ class VisioConverter {
         }
         
         // Parse sections
-        const sections = shapeElem.querySelectorAll(":scope > Section");
+        const sections = this.getDirectChildren(shapeElem, "Section");
         for (const section of sections) {
             const secName = section.getAttribute("N");
             
@@ -304,55 +426,55 @@ class VisioConverter {
                 const geo = this.parseGeometrySection(section);
                 if (geo) sd.geometry.push(geo);
             } else if (secName === "Controls") {
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const rowIx = row.getAttribute("IX") || "0";
                     const ctrl = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         ctrl[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
                     sd.controls[`Row_${rowIx}`] = ctrl;
                 }
             } else if (secName === "User") {
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const rowName = row.getAttribute("N");
                     const userVals = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         userVals[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
                     sd.user[rowName] = userVals;
                 }
             } else if (secName === "Connection") {
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const rowIx = row.getAttribute("IX") || "0";
                     const conn = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         conn[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
                     sd.connections[rowIx] = conn;
                 }
             } else if (secName === "Character") {
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const rowIx = row.getAttribute("IX") || "0";
                     const fmt = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         fmt[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
                     sd.char_formats[rowIx] = fmt;
                 }
             } else if (secName === "Paragraph") {
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const rowIx = row.getAttribute("IX") || "0";
                     const fmt = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         fmt[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
@@ -360,10 +482,10 @@ class VisioConverter {
                 }
             } else if (secName === "FillGradientDef") {
                 const gradStops = [];
-                const rows = section.querySelectorAll("Row");
+                const rows = this.querySelectorAll(section, "Row");
                 for (const row of rows) {
                     const stopCells = {};
-                    const rowCells = row.querySelectorAll("Cell");
+                    const rowCells = this.querySelectorAll(row, "Cell");
                     for (const cell of rowCells) {
                         stopCells[cell.getAttribute("N")] = cell.getAttribute("V") || "";
                     }
@@ -380,17 +502,17 @@ class VisioConverter {
         }
         
         // Parse text
-        const textElem = shapeElem.querySelector(":scope > Text");
+        const textElem = this.querySelector(shapeElem, "Text");
         if (textElem) {
-            sd.text = textElem.textContent?.trim() || "";
+            sd.text = (textElem.textContent || textElem.innerText || "").trim();
             sd.text_parts = this.parseTextElement(textElem);
             sd._has_text_elem = true;
         }
         
         // Parse sub-shapes (groups)
-        const shapesContainer = shapeElem.querySelector(":scope > Shapes");
+        const shapesContainer = this.querySelector(shapeElem, "Shapes");
         if (shapesContainer) {
-            const subShapes = shapesContainer.querySelectorAll("Shape");
+            const subShapes = this.querySelectorAll(shapesContainer, "Shape");
             for (const subShape of subShapes) {
                 sd.sub_shapes.push(this.parseSingleShape(subShape));
             }
@@ -401,22 +523,24 @@ class VisioConverter {
         if (fdInfo) sd.foreign_data = fdInfo;
         
         // Parse hyperlinks
-        const hyperlinkSections = shapeElem.querySelectorAll('Section[N="Hyperlink"]');
-        for (const section of hyperlinkSections) {
-            const rows = section.querySelectorAll("Row");
-            for (const row of rows) {
-                const link = {};
-                const rowCells = row.querySelectorAll("Cell");
-                for (const cell of rowCells) {
-                    const n = cell.getAttribute("N");
-                    const v = cell.getAttribute("V") || "";
-                    if (n === "Description") link.description = v;
-                    else if (n === "Address") link.address = v;
-                    else if (n === "SubAddress") link.sub_address = v;
-                    else if (n === "Frame") link.frame = v;
-                }
-                if (Object.keys(link).length > 0) {
-                    sd.hyperlinks.push(link);
+        const allSections = this.querySelectorAll(shapeElem, "Section");
+        for (const section of allSections) {
+            if (section.getAttribute("N") === "Hyperlink") {
+                const rows = this.querySelectorAll(section, "Row");
+                for (const row of rows) {
+                    const link = {};
+                    const rowCells = this.querySelectorAll(row, "Cell");
+                    for (const cell of rowCells) {
+                        const n = cell.getAttribute("N");
+                        const v = cell.getAttribute("V") || "";
+                        if (n === "Description") link.description = v;
+                        else if (n === "Address") link.address = v;
+                        else if (n === "SubAddress") link.sub_address = v;
+                        else if (n === "Frame") link.frame = v;
+                    }
+                    if (Object.keys(link).length > 0) {
+                        sd.hyperlinks.push(link);
+                    }
                 }
             }
         }
@@ -431,7 +555,7 @@ class VisioConverter {
         const geo = { rows: [], no_fill: false, no_line: false, no_show: false };
         
         // Check section-level cells
-        const sectionCells = section.querySelectorAll(":scope > Cell");
+        const sectionCells = this.getDirectChildren(section, "Cell");
         for (const cell of sectionCells) {
             const n = cell.getAttribute("N");
             const v = cell.getAttribute("V") || "0";
@@ -440,13 +564,13 @@ class VisioConverter {
             else if (n === "NoShow" && v === "1") geo.no_show = true;
         }
         
-        const rows = section.querySelectorAll("Row");
+        const rows = this.querySelectorAll(section, "Row");
         for (const row of rows) {
             const rowType = row.getAttribute("T") || "";
             const rowIx = row.getAttribute("IX") || "";
             const rowData = { type: rowType, cells: {}, ix: rowIx };
             
-            const cells = row.querySelectorAll("Cell");
+            const cells = this.querySelectorAll(row, "Cell");
             for (const cell of cells) {
                 const n = cell.getAttribute("N");
                 const v = cell.getAttribute("V") || "";
@@ -502,7 +626,7 @@ class VisioConverter {
      * Parse ForeignData element
      */
     parseForeignData(shapeElem) {
-        const fd = shapeElem.querySelector("ForeignData");
+        const fd = this.querySelector(shapeElem, "ForeignData");
         if (!fd) return null;
         
         const info = {
@@ -513,17 +637,14 @@ class VisioConverter {
         };
         
         // Check for Rel element
-        let relElem = fd.querySelector("Rel");
-        if (!relElem) {
-            relElem = fd.querySelector('*[\\:id]');
-        }
+        let relElem = this.querySelector(fd, "Rel");
         if (relElem) {
             info.rel_id = relElem.getAttribute("r:id") || 
                          relElem.getAttributeNS(this.NS.r, "id") || "";
         } else {
             // Inline data
-            const text = fd.textContent;
-            if (text?.trim()) {
+            const text = (fd.textContent || fd.innerText || "");
+            if (text.trim()) {
                 info.data = text.trim();
             }
         }
@@ -672,14 +793,13 @@ class VisioConverter {
      * Parse page dimensions
      */
     parsePageDimensions(pageXml) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(pageXml, "text/xml");
+        const doc = this.parseXml(pageXml);
         
         let width = 8.5, height = 11.0;
         
-        const pageSheet = doc.querySelector("PageSheet");
+        const pageSheet = this.querySelector(doc, "PageSheet");
         if (pageSheet) {
-            const cells = pageSheet.querySelectorAll("Cell");
+            const cells = this.querySelectorAll(pageSheet, "Cell");
             for (const cell of cells) {
                 const name = cell.getAttribute("N");
                 const value = this.safeFloat(cell.getAttribute("V"));
@@ -695,14 +815,15 @@ class VisioConverter {
      * Extract page name
      */
     extractPageName(pageXml) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(pageXml, "text/xml");
+        const doc = this.parseXml(pageXml);
         
-        const pageSheet = doc.querySelector("PageSheet");
+        const pageSheet = this.querySelector(doc, "PageSheet");
         if (pageSheet) {
-            const nameCell = pageSheet.querySelector('Cell[N="PageName"]');
-            if (nameCell) {
-                return nameCell.getAttribute("V") || "";
+            const cells = this.querySelectorAll(pageSheet, "Cell");
+            for (const cell of cells) {
+                if (cell.getAttribute("N") === "PageName") {
+                    return cell.getAttribute("V") || "";
+                }
             }
         }
         
@@ -714,16 +835,18 @@ class VisioConverter {
      */
     parseVsdxShapes(pageXml) {
         const shapes = [];
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(pageXml, "text/xml");
+        const doc = this.parseXml(pageXml);
         
-        const shapesContainer = doc.querySelector("Shapes");
+        const shapesContainer = this.querySelector(doc, "Shapes");
         if (!shapesContainer) return shapes;
         
-        const shapeNodes = shapesContainer.querySelectorAll(":scope > Shape");
+        const shapeNodes = this.querySelectorAll(shapesContainer, "Shape");
         for (const node of shapeNodes) {
-            const shape = this.parseSingleShape(node);
-            if (shape) shapes.push(shape);
+            // Only get direct children of Shapes container
+            if (node.parentNode === shapesContainer) {
+                const shape = this.parseSingleShape(node);
+                if (shape) shapes.push(shape);
+            }
         }
         
         return shapes;
@@ -734,10 +857,10 @@ class VisioConverter {
      */
     parseConnects(pageXmlRoot) {
         const connects = [];
-        const connectsEl = pageXmlRoot.querySelector("Connects");
+        const connectsEl = this.querySelector(pageXmlRoot, "Connects");
         if (!connectsEl) return connects;
         
-        const connectNodes = connectsEl.querySelectorAll("Connect");
+        const connectNodes = this.querySelectorAll(connectsEl, "Connect");
         for (const c of connectNodes) {
             connects.push({
                 from_sheet: c.getAttribute("FromSheet") || "",
@@ -755,22 +878,24 @@ class VisioConverter {
      */
     parseLayers(pageXmlRoot) {
         const layers = {};
-        const pageSheet = pageXmlRoot.querySelector("PageSheet");
+        const pageSheet = this.querySelector(pageXmlRoot, "PageSheet");
         if (!pageSheet) return layers;
         
-        const sections = pageSheet.querySelectorAll('Section[N="Layer"]');
+        const sections = this.querySelectorAll(pageSheet, "Section");
         for (const section of sections) {
-            const rows = section.querySelectorAll("Row");
-            for (const row of rows) {
-                const ix = row.getAttribute("IX") || "";
-                const cells = {};
-                const rowCells = row.querySelectorAll("Cell");
-                for (const cell of rowCells) {
-                    cells[cell.getAttribute("N")] = cell.getAttribute("V") || "";
+            if (section.getAttribute("N") === "Layer") {
+                const rows = this.querySelectorAll(section, "Row");
+                for (const row of rows) {
+                    const ix = row.getAttribute("IX") || "";
+                    const cells = {};
+                    const rowCells = this.querySelectorAll(row, "Cell");
+                    for (const cell of rowCells) {
+                        cells[cell.getAttribute("N")] = cell.getAttribute("V") || "";
+                    }
+                    const visible = cells.Visible !== "0";
+                    const name = cells.Name || `Layer ${ix}`;
+                    layers[ix] = { name, visible };
                 }
-                const visible = cells.Visible !== "0";
-                const name = cells.Name || `Layer ${ix}`;
-                layers[ix] = { name, visible };
             }
         }
         
@@ -788,9 +913,8 @@ class VisioConverter {
         const rels = {};
         try {
             const relsXml = await this.zipFile.file(relsPath).async("text");
-            const parser = new DOMParser();
-            const root = parser.parseFromString(relsXml, "text/xml");
-            const relNodes = root.querySelectorAll("Relationship");
+            const root = this.parseXml(relsXml);
+            const relNodes = this.querySelectorAll(root, "Relationship");
             for (const rel of relNodes) {
                 const rid = rel.getAttribute("Id");
                 const target = rel.getAttribute("Target");
@@ -1403,6 +1527,13 @@ class VisioConverter {
                 const y = this.safeFloat(cells.Y?.V) * sy;
                 dParts.push(`M ${(x * this.INCH_TO_PX).toFixed(2)} ${((absH - y) * this.INCH_TO_PX).toFixed(2)}`);
                 cx = x; cy = y;
+            } else if (rt === "RelMoveTo") {
+                // Relative coordinates (0-1) scale to shape dimensions
+                const x = this.safeFloat(cells.X?.V) * absW;
+                const y = this.safeFloat(cells.Y?.V) * absH;
+                dParts.push(`M ${(x * this.INCH_TO_PX).toFixed(2)} ${((absH - y) * this.INCH_TO_PX).toFixed(2)}`);
+                cx = x / absW; // Normalized for next operations
+                cy = y / absH;
                 
                 // Detect oval pattern
                 const remaining = geo.rows.slice(rowIdx + 1);
@@ -1445,6 +1576,13 @@ class VisioConverter {
                 const y = this.safeFloat(cells.Y?.V) * sy;
                 dParts.push(`L ${(x * this.INCH_TO_PX).toFixed(2)} ${((absH - y) * this.INCH_TO_PX).toFixed(2)}`);
                 cx = x; cy = y;
+            } else if (rt === "RelLineTo") {
+                // Relative coordinates (0-1) scale to shape dimensions
+                const x = this.safeFloat(cells.X?.V) * absW;
+                const y = this.safeFloat(cells.Y?.V) * absH;
+                dParts.push(`L ${(x * this.INCH_TO_PX).toFixed(2)} ${((absH - y) * this.INCH_TO_PX).toFixed(2)}`);
+                cx = x / absW; // Normalized for next operations
+                cy = y / absH;
             } else if (rt === "ArcTo") {
                 const x = this.safeFloat(cells.X?.V) * sx;
                 const y = this.safeFloat(cells.Y?.V) * sy;
@@ -2655,9 +2793,33 @@ class VisioConverter {
      * Render connector with geometry
      */
     renderConnectorWithGeometry(shape, pageH, strokeWidth, lineColor, dashArray, markerAttrs) {
-        // This would implement geometry-based connector routing
-        // For now, return simple implementation
-        return [];
+        const elements = [];
+        
+        if (!shape.geometry || shape.geometry.length === 0) {
+            return elements;
+        }
+        
+        // Get connector transform
+        const transform = this.computeTransform(shape, pageH);
+        
+        // Convert each geometry section to path
+        for (const geo of shape.geometry) {
+            if (geo.no_show) continue;
+            
+            const wInch = this.getCellFloat(shape, "Width");
+            const hInch = this.getCellFloat(shape, "Height");
+            const pathD = this.geometryToPath(geo, wInch, hInch, 0, 0);
+            
+            if (!pathD) continue;
+            
+            elements.push(
+                `<path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="${strokeWidth.toFixed(2)}"` +
+                (dashArray ? ` stroke-dasharray="${dashArray}"` : '') +
+                markerAttrs + ` transform="${transform}"/>`
+            );
+        }
+        
+        return elements;
     }
 
     /**

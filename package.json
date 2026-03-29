@@ -1,5 +1,7 @@
 {
   "dependencies": {
-    "jsdom": "^29.0.1"
+    "@xmldom/xmldom": "^0.8.11",
+    "jsdom": "^29.0.1",
+    "jszip": "^3.10.1"
   }
 }
