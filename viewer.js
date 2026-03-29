@@ -32,8 +32,27 @@
   const fileInput = document.getElementById("file-input");
   const dropZone = document.getElementById("drop-zone");
 
-  function showError(msg) {
-    errorMessage.textContent = msg;
+  // ---- i18n ----
+  function msg(key, ...subs) {
+    if (typeof chrome !== "undefined" && chrome.i18n && chrome.i18n.getMessage) {
+      const m = chrome.i18n.getMessage(key, subs);
+      if (m) return m;
+    }
+    // Fallback: return key as-is (works outside extension context)
+    return key;
+  }
+
+  // Apply i18n to data-i18n elements
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    const translated = msg(key);
+    if (translated && translated !== key) {
+      el.textContent = translated;
+    }
+  });
+
+  function showError(msgText) {
+    errorMessage.textContent = msgText;
     errorOverlay.classList.remove("hidden");
   }
 
@@ -46,7 +65,7 @@
   // ---- Convert .vsdx to SVG pages ----
   async function convertFile(arrayBuffer, filename) {
     if (welcome) welcome.classList.add("hidden");
-    setLoading(true, "Parsing Visio file…");
+    setLoading(true, msg("parsing"));
     try {
       // Create new converter instance
       converter = new VisioConverter();
@@ -56,7 +75,7 @@
       
       const pages = converter.getPages();
       if (pages.length === 0) {
-        showError("No pages found in the Visio file.");
+        showError(msg("errorNoPages"));
         setLoading(false);
         return;
       }
@@ -361,7 +380,7 @@
         await convertFile(buf, pending.filename || "file.vsdx");
       } else {
         setLoading(false);
-        showError("Failed to load local file. Try drag & drop or the file picker.");
+        showError(msg("errorLoadFailed"));
       }
     } else if (source === "file") {
       // Navigated to a local file:// .vsdx — prompt user to select it
