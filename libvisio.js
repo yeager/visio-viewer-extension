@@ -896,6 +896,13 @@ class VisioConverter {
         // Build defs
         const defsContent = [];
         
+        // QUALITY FIX 1: Add default shadow filter for professional look
+        defsContent.push(
+            `<filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">`,
+            `<feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.2)"/>`,
+            `</filter>`
+        );
+        
         // Arrow markers
         if (usedMarkers.size > 0) {
             const markerLines = this.arrowMarkerDefs(usedMarkers);
@@ -1045,15 +1052,27 @@ class VisioConverter {
         if (shape.geometry && shape.geometry.length > 0) {
             return this.renderConnectorWithGeometry(shape, pageH, strokeWidth, lineColor, dashArray, markerAttrs);
         } else {
-            // Simple orthogonal routing
-            const dx = Math.abs(endX - beginX);
-            const dy = Math.abs(endY - beginY);
+            // QUALITY FIX 4: Professional orthogonal routing
+            const dx = endX - beginX;
+            const dy = endY - beginY;
+            const adx = Math.abs(dx);
+            const ady = Math.abs(dy);
             
-            if (dx > 5 && dy > 5) {
-                const midY = (beginY + endY) / 2;
-                const pathD = `M ${beginX.toFixed(2)} ${beginY.toFixed(2)} L ${beginX.toFixed(2)} ${midY.toFixed(2)} L ${endX.toFixed(2)} ${midY.toFixed(2)} L ${endX.toFixed(2)} ${endY.toFixed(2)}`;
+            if (adx > 10 && ady > 10) {
+                // Smart orthogonal routing: prefer direction with larger displacement
+                let pathD;
+                if (adx > ady) {
+                    // Horizontal-first (L-shape)
+                    const midX = beginX + dx * 0.5;
+                    pathD = `M ${beginX.toFixed(2)} ${beginY.toFixed(2)} L ${midX.toFixed(2)} ${beginY.toFixed(2)} L ${midX.toFixed(2)} ${endY.toFixed(2)} L ${endX.toFixed(2)} ${endY.toFixed(2)}`;
+                } else {
+                    // Vertical-first (L-shape)
+                    const midY = beginY + dy * 0.5;
+                    pathD = `M ${beginX.toFixed(2)} ${beginY.toFixed(2)} L ${beginX.toFixed(2)} ${midY.toFixed(2)} L ${endX.toFixed(2)} ${midY.toFixed(2)} L ${endX.toFixed(2)} ${endY.toFixed(2)}`;
+                }
+                
                 elements.push(
-                    `<path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="${strokeWidth.toFixed(2)}"` +
+                    `<polyline points="${this.pathToPoints(pathD)}" fill="none" stroke="${lineColor}" stroke-width="${strokeWidth.toFixed(2)}"` +
                     (dashArray ? ` stroke-dasharray="${dashArray}"` : '') +
                     markerAttrs + ' stroke-linejoin="round"/>'
                 );
@@ -1145,7 +1164,7 @@ class VisioConverter {
         
         elements.push(
             `<rect x="0" y="0" width="${wPx.toFixed(2)}" height="${hPx.toFixed(2)}" ` +
-            `${fallbackStyle}${rxAttr} transform="${transform}"/>`
+            `${fallbackStyle}${rxAttr}${style.shadowAttr} transform="${transform}"/>`
         );
         
         // Auto-add shape name as text if no text present
@@ -1213,10 +1232,11 @@ class VisioConverter {
             }
         }
         
-        // Shadow
-        let shadowAttr = "";
+        // QUALITY FIX 1: Add professional shadows to ALL shapes (not just those with ShdwPattern)
+        let shadowAttr = ' filter="url(#shadow)"';
         const shdwPattern = this.getCellVal(shape, "ShdwPattern");
         if (shdwPattern && shdwPattern !== "0") {
+            // Use custom shadow if specified
             const shdwOffsetX = this.getCellFloat(shape, "ShdwOffsetX", 0.0278) * this.INCH_TO_PX;
             const shdwOffsetY = -this.getCellFloat(shape, "ShdwOffsetY", -0.0278) * this.INCH_TO_PX;
             const shdwColor = this.resolveColor(this.getCellVal(shape, "ShdwForegnd")) || "#000000";
@@ -1244,7 +1264,23 @@ class VisioConverter {
         if (fillPatInt === 0) {
             return "none";
         } else if (fillPatInt === 1) {
-            return fillForegnd || fillBkgnd || "none";
+            const baseFill = fillForegnd || fillBkgnd;
+            if (!baseFill || baseFill === "none") {
+                return "none";
+            }
+            
+            // QUALITY FIX 5: Add subtle gradient to solid fills for professional look
+            const gradId = `grad_${shape.id}_auto`;
+            const lighterColor = this.lightenColor(baseFill, 0.15);
+            
+            gradients[gradId] = {
+                start: lighterColor,
+                end: baseFill,
+                dir: 0, // Top to bottom
+                radial: false
+            };
+            
+            return `url(#${gradId})`;
         } else if (fillPatInt >= 25 && fillPatInt <= 40) {
             // Gradient fill
             const startColor = fillBkgnd || "#FFFFFF";
@@ -1639,11 +1675,31 @@ class VisioConverter {
         // Get text formatting
         const charFormats = shape.char_formats || {};
         const charFmt = charFormats["0"] || {};
+        // QUALITY FIX 3: Smart font sizing based on shape dimensions
         let fontSize = this.safeFloat(charFmt.Size || "0.1111") * this.INCH_TO_PX;
-        if (fontSize < 6) fontSize = 8;
-        else if (fontSize > 72) fontSize = 72;
+        if (fontSize < 6 || fontSize > 72) {
+            // Calculate optimal font size based on shape size
+            const shapeWidthPx = Math.abs(wInch) * this.INCH_TO_PX;
+            const shapeHeightPx = Math.abs(hInch) * this.INCH_TO_PX;
+            const textLength = text ? text.length : 10;
+            
+            // Adaptive sizing: aim for 60-80% of shape width utilization
+            const targetWidth = shapeWidthPx * 0.7;
+            const scaleFactor = 0.6; // Approximate character width factor
+            fontSize = Math.min(18, Math.max(8, targetWidth / (textLength * scaleFactor)));
+            
+            // Also consider height constraint
+            const maxFontForHeight = shapeHeightPx * 0.4; // 40% of shape height
+            fontSize = Math.min(fontSize, maxFontForHeight);
+        }
         
-        const textColor = this.resolveColor(charFmt.Color) || "#000000";
+        // QUALITY FIX 2: Smart text contrast based on shape background
+        let textColor = this.resolveColor(charFmt.Color);
+        if (!textColor) {
+            // Auto-determine text color based on shape background
+            const shapeFill = this.resolveColor(this.getCellVal(shape, "FillForegnd")) || "#FFFFFF";
+            textColor = this.getContrastTextColor(shapeFill);
+        }
         const fontName = charFmt.Font || "";
         const fontFamily = this.mapFontFamily(fontName);
         
@@ -2025,6 +2081,71 @@ class VisioConverter {
             `flood-color="${color}" flood-opacity="${opacity.toFixed(2)}"/>` +
             `</filter>`
         );
+    }
+
+    /**
+     * QUALITY FIX 5: Lighten a hex color by a percentage for gradients
+     */
+    lightenColor(hex, percent) {
+        if (!hex || hex === "none" || !hex.startsWith("#")) {
+            return hex;
+        }
+
+        let color = hex.replace("#", "");
+        if (color.length === 3) {
+            color = color.split('').map(c => c + c).join('');
+        }
+
+        const r = parseInt(color.substr(0, 2), 16);
+        const g = parseInt(color.substr(2, 2), 16);
+        const b = parseInt(color.substr(4, 2), 16);
+
+        const newR = Math.min(255, Math.round(r + (255 - r) * percent));
+        const newG = Math.min(255, Math.round(g + (255 - g) * percent));
+        const newB = Math.min(255, Math.round(b + (255 - b) * percent));
+
+        return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    }
+
+    /**
+     * QUALITY FIX 4: Convert path commands to polyline points
+     */
+    pathToPoints(pathD) {
+        const points = [];
+        const parts = pathD.split(/[ML]/);
+        for (let i = 1; i < parts.length; i++) {
+            const coords = parts[i].trim().split(' ');
+            if (coords.length >= 2) {
+                points.push(`${coords[0]},${coords[1]}`);
+            }
+        }
+        return points.join(' ');
+    }
+
+    /**
+     * QUALITY FIX 2: Calculate optimal text color for readability
+     */
+    getContrastTextColor(backgroundColor) {
+        if (!backgroundColor || backgroundColor === "none") {
+            return "#000000";
+        }
+
+        // Parse hex color
+        let hex = backgroundColor.replace("#", "");
+        if (hex.length === 3) {
+            hex = hex.split('').map(c => c + c).join('');
+        }
+
+        const r = parseInt(hex.substr(0, 2), 16) / 255.0;
+        const g = parseInt(hex.substr(2, 2), 16) / 255.0;
+        const b = parseInt(hex.substr(4, 2), 16) / 255.0;
+
+        // Calculate luminance (relative luminance formula)
+        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+
+        // Dark background (luminance < 0.5) needs white text
+        // Light background (luminance >= 0.5) needs dark text
+        return luminance < 0.5 ? "#FFFFFF" : "#333333";
     }
 
     // Utility functions

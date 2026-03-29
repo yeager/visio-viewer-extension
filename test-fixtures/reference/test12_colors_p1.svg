@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="659" height="421" viewBox="-32 -32 659 421">
+<rect x="-32" y="-32" width="659" height="421" fill="white"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#00ff00" stroke-width="0.72" transform="translate(18.00,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(219.69,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="#00ff00" stroke="#333333" stroke-width="0.72" transform="translate(421.37,18.00)"/>
+<!-- Text layer -->
+<text x="95.95" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Line Color</text>
+<text x="297.64" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#00ff00" data-noclip="1">Text Color</text>
+<text x="499.32" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Fill Color</text>
+</svg>

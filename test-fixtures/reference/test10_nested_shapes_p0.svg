@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="333" height="421" viewBox="0 -30 333 421">
+<rect x="0" y="-30" width="333" height="421" fill="white"/>
+<g transform="translate(56.69,76.54)">
+<g transform="translate(0.00,0.00)">
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(0.00,0.00)"/>
+<text x="48.19" y="14.17" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape 1.1.1</text>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(0.00,36.85)"/>
+<text x="48.19" y="51.02" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape 1.1.2</text>
+</g>
+<text x="48.19" y="32.60" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">Shape 1.1</text>
+<g transform="translate(130.39,0.00)">
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(0.00,0.00)"/>
+<text x="48.19" y="14.17" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape 1.2.1</text>
+<path d="M 0.00 28.35 L 96.38 28.35 L 96.38 0.00 L 0.00 0.00 L 0.00 28.35 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(0.00,36.85)"/>
+<text x="48.19" y="51.02" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape 1.2.2</text>
+</g>
+<text x="178.58" y="32.60" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">Shape 1.2</text>
+</g>
+<rect x="0" y="0" width="226.77" height="28.35" rx="14.17" ry="14.17" fill="#ab9ac0" stroke="#333333" stroke-width="0.72" transform="translate(56.69,19.84)"/>
+<!-- Text layer -->
+<text x="170.08" y="109.13" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">Shape 1</text>
+<text x="170.08" y="34.02" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Nested Shape Example</text>
+</svg>

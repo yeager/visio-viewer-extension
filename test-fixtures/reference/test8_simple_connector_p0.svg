@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="550" height="421" viewBox="-32 -32 550 421">
+<rect x="-32" y="-32" width="550" height="421" fill="white"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(18.00,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(311.81,178.58)"/>
+<!-- Text layer -->
+<text x="95.95" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape A</text>
+<text x="389.76" y="235.28" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape B</text>
+</svg>

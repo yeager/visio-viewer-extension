@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="878" height="298" viewBox="0 0 878 298">
+<rect x="0" y="0" width="878" height="298" fill="white"/>
+<defs>
+<marker id="arrow_end_3_000000" markerWidth="12.0" markerHeight="8.4" refX="12.0" refY="4.2" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 12.0 4.2, 0 8.4" fill="#000000"/></marker>
+<marker id="arrow_end_3_ff6600" markerWidth="12.0" markerHeight="8.4" refX="12.0" refY="4.2" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 12.0 4.2, 0 8.4" fill="#ff6600"/></marker>
+</defs>
+<g transform="translate(153.00,133.31)">
+<path d="M 0.00 16.00 A 16.00 16.00 0 1 0 32.00 16.00 A 16.00 16.00 0 1 0 0.00 16.00 Z" fill="#008000" stroke="#000000" stroke-width="1.50"/>
+</g>
+<g transform="translate(230.00,111.31)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ffffff" stroke="#ff6600" stroke-width="1.50"/>
+</g>
+<g transform="translate(788.00,131.31)">
+<path d="M 1.44 18.00 A 16.56 16.56 0 1 0 34.56 18.00 A 16.56 16.56 0 1 0 1.44 18.00 Z" fill="#ffffff" stroke="#000000" stroke-width="2.72"/>
+</g>
+<g transform="translate(416.00,111.31)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ff00ff" stroke="#00ff00" stroke-width="1.50"/>
+</g>
+<g transform="translate(602.00,111.31)">
+<path d="M 0.00 76.00 L 96.00 76.00 L 96.00 0.00 L 0.00 0.00 L 0.00 76.00 Z" fill="#ffffff" stroke="#000000" stroke-width="1.50"/>
+</g>
+<path d="M 184.00 149.31 L 230.00 149.31" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)"/>
+<path d="M 325.00 149.31 L 417.00 149.31" fill="none" stroke="#ff6600" stroke-width="1.50" marker-end="url(#arrow_end_3_ff6600)"/>
+<path d="M 697.00 149.31 L 788.00 149.31" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)"/>
+<path d="M 511.00 149.31 L 603.00 149.31" fill="none" stroke="#000000" stroke-width="1.50" marker-end="url(#arrow_end_3_000000)"/>
+<!-- Text layer -->
+<text x="169.20" y="181.01" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="6.3" fill="#000000" data-noclip="1">Green Fill</text>
+<text x="277.92" y="144.53" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Orange</text>
+<text x="277.92" y="154.13" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Border</text>
+<text x="805.68" y="183.17" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#ff0000" data-noclip="1">Red Font</text>
+<text x="463.68" y="134.93" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff" data-noclip="1">Pink Fill</text>
+<text x="463.68" y="144.53" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff" data-noclip="1">Green</text>
+<text x="463.68" y="154.13" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff" data-noclip="1">Border</text>
+<text x="463.68" y="163.73" text-anchor="middle" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#3366ff" data-noclip="1">Blue Font</text>
+<text x="650.16" y="149.33" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">No Color</text>
+<rect x="349.00" y="154.72" width="45.04" height="8.14" fill="white" fill-opacity="0.55" rx="1"/>
+<text x="371.52" y="158.79" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="6.8" fill="#000000">Orange link</text>
+<rect x="723.44" y="153.02" width="39.20" height="9.60" fill="white" fill-opacity="0.55" rx="1"/>
+<text x="743.04" y="157.82" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">No Color</text>
+<rect x="537.68" y="153.02" width="39.20" height="9.60" fill="white" fill-opacity="0.55" rx="1"/>
+<text x="557.28" y="157.82" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000">No color</text>
+</svg>

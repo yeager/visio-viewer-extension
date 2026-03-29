@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="458" height="421" viewBox="-32 -32 458 421">
+<rect x="-32" y="-32" width="458" height="421" fill="white"/>
+<defs>
+<marker id="arrow_end_2_333333" markerWidth="10.0" markerHeight="7.0" refX="10.0" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 10.0 3.5, 0 7.0" fill="#333333"/></marker>
+</defs>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(18.00,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(219.69,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(120.47,189.92)"/>
+<path d="M 173.91 74.69 L 219.69 74.69" fill="none" stroke="#333333" stroke-width="1.50" marker-end="url(#arrow_end_2_333333)"/>
+<path d="M 248.03 131.39 L 248.03 189.92" fill="none" stroke="#333333" stroke-width="1.50" marker-end="url(#arrow_end_2_333333)"/>
+<!-- Text layer -->
+<text x="95.95" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape A</text>
+<text x="297.64" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape B</text>
+<text x="198.43" y="246.61" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape C</text>
+</svg>

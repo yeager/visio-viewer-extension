@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="649" height="485" viewBox="-32 -32 649 485">
+<rect x="-32" y="-32" width="649" height="485" fill="white"/>
+<defs>
+<marker id="arrow_end_2_333333" markerWidth="10.0" markerHeight="7.0" refX="10.0" refY="3.5" orient="auto" markerUnits="userSpaceOnUse"><polygon points="0 0, 10.0 3.5, 0 7.0" fill="#333333"/></marker>
+</defs>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(18.00,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(219.69,18.00)"/>
+<path d="M 0.00 113.39 L 155.91 113.39 L 155.91 0.00 L 0.00 0.00 L 0.00 113.39 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(411.02,170.43)"/>
+<path d="M 0.00 79.37 L 299.06 79.37 L 299.06 0.00 L 0.00 0.00 L 0.00 79.37 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(18.43,153.07)"/>
+<path d="M 417.81 170.43 L 368.80 131.39" fill="none" stroke="#333333" stroke-width="1.50" marker-end="url(#arrow_end_2_333333)"/>
+<path d="M 0.00 79.37 L 56.69 79.37 L 56.69 0.00 L 0.00 0.00 L 0.00 79.37 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(99.21,254.13)"/>
+<path d="M 0.00 56.69 L 155.91 56.69 L 155.91 0.00 L 0.00 0.00 L 0.00 56.69 Z" fill="none" stroke="#333333" stroke-width="0.72" transform="translate(155.91,345.83)"/>
+<!-- Text layer -->
+<text x="95.95" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape Text</text>
+<text x="297.64" y="74.69" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape to remove</text>
+<text x="488.98" y="227.13" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Shape to copy</text>
+<text x="167.95" y="192.76" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="5.6" fill="#000000" data-noclip="1">Shape for context filter: The scenario is {{scenario}} and this file was created on {{date}}</text>
+<text x="127.56" y="293.81" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Tall Box</text>
+<text x="233.86" y="374.17" text-anchor="middle" dominant-baseline="central" font-family="Noto Sans, sans-serif" font-size="8.0" fill="#000000" data-noclip="1">Short Box</text>
+</svg>
