@@ -1729,7 +1729,13 @@ class VisioConverter {
         if (masterShapeId && masterShapes[masterShapeId]) {
             masterSd = masterShapes[masterShapeId];
         } else if (Object.keys(masterShapes).length > 0) {
-            masterSd = Object.values(masterShapes)[0];
+            // Prefer shapes with geometry when MasterShape is not specified
+            const shapesWithGeometry = Object.values(masterShapes).filter(s => s.geometry && s.geometry.length > 0);
+            if (shapesWithGeometry.length > 0) {
+                masterSd = shapesWithGeometry[0];
+            } else {
+                masterSd = Object.values(masterShapes)[0];
+            }
         }
         
         if (!masterSd) return shape;
@@ -2674,6 +2680,11 @@ class VisioConverter {
         
         // Render sub-shapes
         for (const sub of shape.sub_shapes || []) {
+            // Ensure sub-shape inherits master ID from parent group if not set
+            if (!sub.master && shape.master) {
+                sub.master = shape.master;
+            }
+            
             const subElements = this.renderShapeToSvg(
                 sub, groupH, usedMarkers, gradients, hasShadow, textLayer, pageRels
             );
