@@ -232,6 +232,12 @@ class VisioConverter {
         // Parse all sections recursively
         this.parseShapeSections(shapeNode, shape);
 
+        // Extract basic text content if available
+        const textNode = shapeNode.querySelector("Text");
+        if (textNode) {
+            shape.text = textNode.textContent || "";
+        }
+
         return shape;
     }
 
@@ -303,7 +309,7 @@ class VisioConverter {
                     const name = cell.getAttribute("N");
                     const value = cell.getAttribute("V") || cell.getAttribute("F") || "0";
                     if (name) {
-                        row[name] = parseFloat(value) || 0;
+                        row[name] = this.safeFloat(value);
                     }
                 });
                 
@@ -458,18 +464,27 @@ class VisioConverter {
         // Try to get text content from various sources
         let textContent = "";
         
+        // Check for direct text in shape attribute
+        if (shape.text) {
+            textContent = shape.text;
+        }
         // Check sections for text
-        if (shape.sections.Text && shape.sections.Text.length > 0) {
+        else if (shape.sections && shape.sections.Text && shape.sections.Text.length > 0) {
             const textSection = shape.sections.Text[0];
             textContent = textSection.Text?.V || textContent;
         }
-        
         // Fallback to cell text
-        if (!textContent) {
-            textContent = shape.cells.Text?.V || "";
+        else if (shape.cells && shape.cells.Text) {
+            textContent = shape.cells.Text.V || "";
         }
         
-        if (!textContent.trim()) {
+        // Clean up text content
+        if (!textContent || typeof textContent !== 'string') {
+            return elements;
+        }
+        
+        textContent = textContent.trim();
+        if (!textContent) {
             return elements;
         }
 
@@ -478,22 +493,31 @@ class VisioConverter {
         let fontFamily = "Arial, sans-serif";
         let textColor = "#000000";
         
-        if (shape.sections.Char && shape.sections.Char.length > 0) {
+        if (shape.sections && shape.sections.Char && shape.sections.Char.length > 0) {
             const charSection = shape.sections.Char[0];
-            fontSize = this.safeFloat(charSection.Size?.V) * this.INCH_TO_PX * 0.75 || 12;
-            textColor = this.resolveColor(charSection.Color?.V) || "#000000";
+            if (charSection.Size && charSection.Size.V) {
+                fontSize = this.safeFloat(charSection.Size.V) * this.INCH_TO_PX * 0.75 || 12;
+            }
+            if (charSection.Color && charSection.Color.V) {
+                textColor = this.resolveColor(charSection.Color.V) || "#000000";
+            }
         }
 
-        // Text positioning
-        const txtPinX = this.safeFloat(shape.cells.TxtPinX?.V) * this.INCH_TO_PX || 0;
-        const txtPinY = this.safeFloat(shape.cells.TxtPinY?.V) * this.INCH_TO_PX || 0;
+        // Text positioning - default to center of shape
+        let txtPinX = 0;
+        let txtPinY = 0;
         
-        const textX = pinX + txtPinX - width / 2;
-        const textY = pinY - txtPinY + height / 2;
+        if (shape.cells) {
+            txtPinX = this.safeFloat(shape.cells.TxtPinX?.V) || 0;
+            txtPinY = this.safeFloat(shape.cells.TxtPinY?.V) || 0;
+        }
+        
+        const textX = pinX + (txtPinX * this.INCH_TO_PX);
+        const textY = pinY - (txtPinY * this.INCH_TO_PX);
         
         elements.push(
-            `<text x="${textX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" ` +
-            `font-family="${fontFamily}" font-size="${fontSize}" fill="${textColor}">` +
+            `<text x="${textX.toFixed(2)}" y="${textY.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" ` +
+            `font-family="${fontFamily}" font-size="${fontSize.toFixed(1)}" fill="${textColor}">` +
             `${this.escapeXml(textContent)}</text>`
         );
         
@@ -550,13 +574,16 @@ class VisioConverter {
                     
                 case 'Ellipse':
                     // Draw ellipse using arc commands
-                    const rx = width / 2;
-                    const ry = height / 2;
-                    const cx = pinX;
-                    const cy = pinY;
-                    path.push(`M ${cx - rx} ${cy}`);
-                    path.push(`A ${rx} ${ry} 0 1 1 ${cx + rx} ${cy}`);
-                    path.push(`A ${rx} ${ry} 0 1 1 ${cx - rx} ${cy}`);
+                    // Ellipse geometry uses X,Y,A,B where A,B are semi-axes
+                    const cx = pinX - width/2 + (this.safeFloat(row.X) * width);
+                    const cy = pinY - height/2 + (this.safeFloat(row.Y) * height);
+                    const a = this.safeFloat(row.A) * width || width / 2;
+                    const b = this.safeFloat(row.B) * height || height / 2;
+                    
+                    path.push(`M ${cx - a} ${cy}`);
+                    path.push(`A ${a} ${b} 0 1 1 ${cx + a} ${cy}`);
+                    path.push(`A ${a} ${b} 0 1 1 ${cx - a} ${cy}`);
+                    path.push('Z'); // Close path
                     break;
                     
                 case 'InfiniteLine':
@@ -575,7 +602,20 @@ class VisioConverter {
             }
         });
         
-        return path.length > 0 ? path.join(' ') : null;
+        if (path.length > 0) {
+            // Close path if it's a polygon/shape (not a line)
+            const firstPoint = path[0];
+            const lastPoint = path[path.length - 1];
+            if (firstPoint && lastPoint && 
+                firstPoint.startsWith('M') && 
+                (lastPoint.startsWith('L') || lastPoint.startsWith('A')) &&
+                geometry.length > 2) {
+                path.push('Z');
+            }
+            return path.join(' ');
+        }
+        
+        return null;
     }
 
     /**
@@ -586,14 +626,13 @@ class VisioConverter {
         
         val = val.toString().trim();
         
+        // Skip inherited values and formulas for now
+        if (val === "Inh" || val.startsWith("=") || val.includes("THEME")) {
+            return null;
+        }
+        
         // Already a hex color
         if (val.startsWith("#")) return val;
-        
-        // Color index
-        const index = parseInt(val);
-        if (!isNaN(index) && this.VISIO_COLORS[index]) {
-            return this.VISIO_COLORS[index];
-        }
         
         // RGB function
         const rgbMatch = val.match(/RGB\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
@@ -604,7 +643,60 @@ class VisioConverter {
             return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
         }
         
+        // HSL function - Visio uses 0-255 range
+        const hslMatch = val.match(/HSL\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/i);
+        if (hslMatch) {
+            return this.hslToRgb(parseInt(hslMatch[1]), parseInt(hslMatch[2]), parseInt(hslMatch[3]));
+        }
+        
+        // Color index (try both int and float)
+        const index = parseInt(val);
+        if (!isNaN(index) && this.VISIO_COLORS[index]) {
+            return this.VISIO_COLORS[index];
+        }
+        
+        // Try float index
+        const floatIndex = parseInt(parseFloat(val));
+        if (!isNaN(floatIndex) && this.VISIO_COLORS[floatIndex]) {
+            return this.VISIO_COLORS[floatIndex];
+        }
+        
         return null;
+    }
+
+    /**
+     * Convert HSL (0-255 range) to RGB hex
+     */
+    hslToRgb(h, s, l) {
+        // Normalize to 0-1 range
+        const hf = (h / 255.0) * 360.0;
+        const sf = s / 255.0;
+        const lf = l / 255.0;
+        
+        let r, g, b;
+        
+        if (sf === 0) {
+            r = g = b = lf; // achromatic
+        } else {
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            };
+            
+            const q = lf < 0.5 ? lf * (1 + sf) : lf + sf - lf * sf;
+            const p = 2 * lf - q;
+            const hn = hf / 360.0;
+            
+            r = hue2rgb(p, q, hn + 1/3);
+            g = hue2rgb(p, q, hn);
+            b = hue2rgb(p, q, hn - 1/3);
+        }
+        
+        return `#${Math.round(r*255).toString(16).padStart(2, '0')}${Math.round(g*255).toString(16).padStart(2, '0')}${Math.round(b*255).toString(16).padStart(2, '0')}`;
     }
 
     /**
