@@ -402,6 +402,23 @@ class VisioConverter {
         const width = this.safeFloat(shape.cells.Width?.V) * this.INCH_TO_PX;
         const height = this.safeFloat(shape.cells.Height?.V) * this.INCH_TO_PX;
         
+        // Check for line/connector shapes (BeginX/EndX instead of Width/Height)
+        const beginX = shape.cells.BeginX?.V;
+        const endX = shape.cells.EndX?.V;
+        if (beginX !== undefined && endX !== undefined) {
+            const bx = this.safeFloat(beginX) * this.INCH_TO_PX;
+            const by = (pageH - this.safeFloat(shape.cells.BeginY?.V)) * this.INCH_TO_PX;
+            const ex = this.safeFloat(endX) * this.INCH_TO_PX;
+            const ey = (pageH - this.safeFloat(shape.cells.EndY?.V)) * this.INCH_TO_PX;
+            const stroke = this.resolveColor(shape.cells.LineColor?.V) || "#000000";
+            const strokeWidth = this.safeFloat(shape.cells.LineWeight?.V) * this.INCH_TO_PX || 1;
+            elements.push(
+                `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" ` +
+                `stroke="${stroke}" stroke-width="${strokeWidth}"/>`
+            );
+            return elements;
+        }
+
         if (width <= 0 || height <= 0) {
             return elements; // Skip invalid shapes
         }
