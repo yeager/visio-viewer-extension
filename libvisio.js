@@ -60,12 +60,13 @@ class VisioConverter {
             try {
                 const pageXml = await this.zipFile.file(pageFile).async("text");
                 const shapes = this.parseShapes(pageXml);
-                const { width, height } = this.parsePageDimensions(pageXml);
+                const { width, height, scale } = this.parsePageDimensions(pageXml);
                 
                 this.pages.push({
                     shapes,
                     width,
                     height,
+                    scale,
                     file: pageFile
                 });
                 
@@ -321,14 +322,14 @@ class VisioConverter {
     }
 
     /**
-     * Parse page dimensions
+     * Parse page dimensions and properties
      */
     parsePageDimensions(pageXml) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(pageXml, "text/xml");
         
         const pageSheet = doc.querySelector("PageSheet");
-        let width = 8.5, height = 11.0; // defaults
+        let width = 8.5, height = 11.0, scale = 1.0; // defaults
         
         if (pageSheet) {
             const cells = pageSheet.querySelectorAll("Cell");
@@ -337,10 +338,11 @@ class VisioConverter {
                 const value = parseFloat(cell.getAttribute("V") || "0");
                 if (name === "PageWidth") width = value;
                 if (name === "PageHeight") height = value;
+                if (name === "DrawingScale") scale = value || 1.0;
             });
         }
         
-        return { width, height };
+        return { width, height, scale };
     }
 
     /**
@@ -371,12 +373,34 @@ class VisioConverter {
         // Calculate viewBox (simplified - use full page for now)
         const vbX = 0, vbY = 0, vbW = pageWPx, vbH = pageHPx;
         
+        // Initialize gradients collection
+        this.customGradients = [];
+        
         let svg = [
             '<?xml version="1.0" encoding="UTF-8"?>',
             `<svg xmlns="http://www.w3.org/2000/svg" `,
             `xmlns:xlink="http://www.w3.org/1999/xlink" `,
             `width="${pageWPx}" height="${pageHPx}" `,
             `viewBox="${vbX} ${vbY} ${vbW} ${vbH}">`,
+            // Arrow markers and filters
+            `<defs>`,
+            `  <marker id="arrowEnd" markerWidth="10" markerHeight="7" `,
+            `          refX="9" refY="3.5" orient="auto">`,
+            `    <polygon points="0 0, 10 3.5, 0 7" fill="#666666"/>`,
+            `  </marker>`,
+            `  <marker id="arrowStart" markerWidth="10" markerHeight="7" `,
+            `          refX="1" refY="3.5" orient="auto">`,
+            `    <polygon points="10 0, 0 3.5, 10 7" fill="#666666"/>`,
+            `  </marker>`,
+            `  <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">`,
+            `    <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>`,
+            `  </filter>`,
+            `  <linearGradient id="defaultGradient" x1="0%" y1="0%" x2="0%" y2="100%">`,
+            `    <stop offset="0%" style="stop-color:#E8E8E8;stop-opacity:1" />`,
+            `    <stop offset="100%" style="stop-color:#C8C8C8;stop-opacity:1" />`,
+            `  </linearGradient>`,
+            ...this.customGradients,
+            `</defs>`,
             `<rect x="${vbX}" y="${vbY}" width="${vbW}" height="${vbH}" fill="white"/>`,
         ];
 
@@ -406,16 +430,55 @@ class VisioConverter {
         const beginX = shape.cells.BeginX?.V;
         const endX = shape.cells.EndX?.V;
         if (beginX !== undefined && endX !== undefined) {
-            const bx = this.safeFloat(beginX) * this.INCH_TO_PX;
-            const by = (pageH - this.safeFloat(shape.cells.BeginY?.V)) * this.INCH_TO_PX;
-            const ex = this.safeFloat(endX) * this.INCH_TO_PX;
-            const ey = (pageH - this.safeFloat(shape.cells.EndY?.V)) * this.INCH_TO_PX;
-            const stroke = this.resolveColor(shape.cells.LineColor?.V) || "#000000";
+            let bx = this.safeFloat(beginX) * this.INCH_TO_PX;
+            let by = (pageH - this.safeFloat(shape.cells.BeginY?.V)) * this.INCH_TO_PX;
+            let ex = this.safeFloat(endX) * this.INCH_TO_PX;
+            let ey = (pageH - this.safeFloat(shape.cells.EndY?.V)) * this.INCH_TO_PX;
+            
+            const stroke = this.resolveColor(shape.cells.LineColor?.V) || "#666666";
             const strokeWidth = this.safeFloat(shape.cells.LineWeight?.V) * this.INCH_TO_PX || 1;
-            elements.push(
-                `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" ` +
-                `stroke="${stroke}" stroke-width="${strokeWidth}"/>`
-            );
+            
+            // Check for arrows
+            let markerAttrs = "";
+            const beginArrow = this.safeFloat(shape.cells.BeginArrow?.V);
+            const endArrow = this.safeFloat(shape.cells.EndArrow?.V);
+            
+            if (beginArrow > 0) {
+                markerAttrs += ` marker-start="url(#arrowStart)"`;
+            }
+            if (endArrow > 0) {
+                markerAttrs += ` marker-end="url(#arrowEnd)"`;
+            }
+            
+            // Add default arrows on flow-like connectors (vertical downward lines in diagrams)
+            if (beginArrow === 0 && endArrow === 0) {
+                const isVertical = Math.abs(bx - ex) < 5; // Roughly vertical
+                const isDownward = by < ey; // Going down (positive Y direction)
+                
+                if (isVertical && isDownward) {
+                    markerAttrs += ` marker-end="url(#arrowEnd)"`;
+                }
+            }
+            
+            // TODO: Improve connector routing to avoid shapes
+            // For now, use simple orthogonal routing for better visual appeal
+            const isOrthogonal = shape.cells.ShapeRouteStyle?.V === "16" || 
+                               shape.cells.ConnectorLayout?.V === "1";
+            
+            if (isOrthogonal && Math.abs(bx - ex) > 20 && Math.abs(by - ey) > 20) {
+                // Create orthogonal path (L-shaped)
+                const midX = (bx + ex) / 2;
+                elements.push(
+                    `<path d="M ${bx.toFixed(1)} ${by.toFixed(1)} L ${midX.toFixed(1)} ${by.toFixed(1)} L ${midX.toFixed(1)} ${ey.toFixed(1)} L ${ex.toFixed(1)} ${ey.toFixed(1)}" ` +
+                    `fill="none" stroke="${stroke}" stroke-width="${strokeWidth}"${markerAttrs}/>`
+                );
+            } else {
+                // Standard straight line
+                elements.push(
+                    `<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${ex.toFixed(1)}" y2="${ey.toFixed(1)}" ` +
+                    `stroke="${stroke}" stroke-width="${strokeWidth}"${markerAttrs}/>`
+                );
+            }
             return elements;
         }
 
@@ -426,7 +489,55 @@ class VisioConverter {
         // Check for geometry sections first (custom paths)
         const hasGeometry = Object.keys(shape.sections || {}).some(key => key.startsWith('Geom'));
         
+        // Check for ellipse geometry specifically
+        let isEllipse = false;
         if (hasGeometry) {
+            Object.values(shape.sections).forEach(section => {
+                if (Array.isArray(section)) {
+                    const hasEllipticalArc = section.some(row => row.type === 'EllipticalArcTo' || row.type === 'Ellipse');
+                    if (hasEllipticalArc) isEllipse = true;
+                }
+            });
+        }
+        
+        if (isEllipse) {
+            // Render as ellipse
+            const cx = pinX;
+            const cy = pinY;
+            const rx = width / 2;
+            const ry = height / 2;
+            
+            let fill = this.resolveColor(shape.cells.FillForegnd?.V) || "#E0E0E0";
+            const fillPattern = this.safeFloat(shape.cells.FillPattern?.V);
+            
+            if (fillPattern >= 25 || shape.cells.FillBkgnd?.V) {
+                const bgColor = this.resolveColor(shape.cells.FillBkgnd?.V);
+                if (bgColor && bgColor !== fill) {
+                    const gradientId = `grad_${shape.id || Math.random().toString(36).substr(2, 9)}`;
+                    this.addGradientDefinition(gradientId, fill, bgColor);
+                    fill = `url(#${gradientId})`;
+                }
+            }
+            
+            const stroke = this.resolveColor(shape.cells.LineColor?.V) || "#000000";
+            const strokeWidth = this.safeFloat(shape.cells.LineWeight?.V) * this.INCH_TO_PX || 1;
+            
+            // Handle drop shadow
+            let filterAttrs = "";
+            if (shape.cells.ShdwForegnd?.V || shape.cells.ShdwOffsetX?.V || shape.cells.ShdwOffsetY?.V) {
+                const shdwOffsetX = this.safeFloat(shape.cells.ShdwOffsetX?.V) * this.INCH_TO_PX;
+                const shdwOffsetY = this.safeFloat(shape.cells.ShdwOffsetY?.V) * this.INCH_TO_PX;
+                
+                if (Math.abs(shdwOffsetX) > 0.5 || Math.abs(shdwOffsetY) > 0.5) {
+                    filterAttrs = ` filter="url(#dropShadow)"`;
+                }
+            }
+            
+            elements.push(
+                `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" ` +
+                `fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${filterAttrs}/>`
+            );
+        } else if (hasGeometry) {
             // Render geometry-based shape
             Object.keys(shape.sections).forEach(key => {
                 if (key.startsWith('Geom')) {
@@ -447,13 +558,48 @@ class VisioConverter {
             // Default rectangle shape
             const x = pinX - width / 2;
             const y = pinY - height / 2;
-            const fill = this.resolveColor(shape.cells.FillForegnd?.V) || "#E0E0E0";
+            
+            // Handle fill - check for gradients
+            let fill = this.resolveColor(shape.cells.FillForegnd?.V) || "#E0E0E0";
+            const fillPattern = this.safeFloat(shape.cells.FillPattern?.V);
+            
+            // Use gradient for certain fill patterns (25+ typically indicates gradients in Visio)
+            if (fillPattern >= 25 || shape.cells.FillBkgnd?.V) {
+                const bgColor = this.resolveColor(shape.cells.FillBkgnd?.V);
+                if (bgColor && bgColor !== fill) {
+                    // Create custom gradient
+                    const gradientId = `grad_${shape.id || Math.random().toString(36).substr(2, 9)}`;
+                    this.addGradientDefinition(gradientId, fill, bgColor);
+                    fill = `url(#${gradientId})`;
+                }
+            }
+            
             const stroke = this.resolveColor(shape.cells.LineColor?.V) || "#000000";
             const strokeWidth = this.safeFloat(shape.cells.LineWeight?.V) * this.INCH_TO_PX || 1;
             
+            // Handle rounded corners
+            let roundingAttrs = "";
+            if (shape.cells.Rounding?.V) {
+                const rounding = this.safeFloat(shape.cells.Rounding.V) * this.INCH_TO_PX;
+                if (rounding > 0) {
+                    roundingAttrs = ` rx="${rounding}" ry="${rounding}"`;
+                }
+            }
+            
+            // Handle drop shadow
+            let filterAttrs = "";
+            if (shape.cells.ShdwForegnd?.V || shape.cells.ShdwOffsetX?.V || shape.cells.ShdwOffsetY?.V) {
+                const shdwOffsetX = this.safeFloat(shape.cells.ShdwOffsetX?.V) * this.INCH_TO_PX;
+                const shdwOffsetY = this.safeFloat(shape.cells.ShdwOffsetY?.V) * this.INCH_TO_PX;
+                
+                if (Math.abs(shdwOffsetX) > 0.5 || Math.abs(shdwOffsetY) > 0.5) {
+                    filterAttrs = ` filter="url(#dropShadow)"`;
+                }
+            }
+            
             elements.push(
-                `<rect x="${x}" y="${y}" width="${width}" height="${height}" ` +
-                `fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"/>`
+                `<rect x="${x}" y="${y}" width="${width}" height="${height}"${roundingAttrs} ` +
+                `fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}"${filterAttrs}/>`
             );
         }
 
@@ -463,10 +609,29 @@ class VisioConverter {
 
         // Render nested shapes (groups)
         if (shape.shapes && shape.shapes.length > 0) {
+            // Create group element
+            const groupAttrs = [];
+            
+            // Apply transformation if needed
+            const angle = this.safeFloat(shape.cells.Angle?.V);
+            if (Math.abs(angle) > 0.001) {
+                const degrees = (angle * 180) / Math.PI;
+                groupAttrs.push(`transform="rotate(${degrees.toFixed(2)} ${pinX} ${pinY})"`);
+            }
+            
+            if (groupAttrs.length > 0) {
+                elements.push(`<g ${groupAttrs.join(' ')}>`);
+            } else {
+                elements.push(`<g>`);
+            }
+            
+            // Render nested shapes
             shape.shapes.forEach(nestedShape => {
                 const nestedElements = this.renderShapeToSvg(nestedShape, pageH);
                 elements.push(...nestedElements);
             });
+            
+            elements.push(`</g>`);
         }
         
         return elements;
@@ -506,17 +671,38 @@ class VisioConverter {
         }
 
         // Get text formatting
-        let fontSize = 12;
+        let fontSize = Math.max(10, Math.min(height / 3, width / 6)); // Adaptive font size
         let fontFamily = "Arial, sans-serif";
         let textColor = "#000000";
+        let fontWeight = "normal";
+        let fontStyle = "normal";
         
         if (shape.sections && shape.sections.Char && shape.sections.Char.length > 0) {
             const charSection = shape.sections.Char[0];
+            
+            // Font size
             if (charSection.Size && charSection.Size.V) {
-                fontSize = this.safeFloat(charSection.Size.V) * this.INCH_TO_PX * 0.75 || 12;
+                fontSize = this.safeFloat(charSection.Size.V) * this.INCH_TO_PX * 0.75 || fontSize;
             }
+            
+            // Font color
             if (charSection.Color && charSection.Color.V) {
                 textColor = this.resolveColor(charSection.Color.V) || "#000000";
+            }
+            
+            // Font style (bold/italic)
+            if (charSection.Style && charSection.Style.V) {
+                const style = this.safeFloat(charSection.Style.V);
+                if ((style & 1) !== 0) fontWeight = "bold"; // Bit 0 = bold
+                if ((style & 2) !== 0) fontStyle = "italic"; // Bit 1 = italic
+            }
+        }
+        
+        // Auto-contrast: white text on dark backgrounds
+        if (shape.cells && shape.cells.FillForegnd?.V) {
+            const bgColor = this.resolveColor(shape.cells.FillForegnd.V);
+            if (bgColor && this.isDarkColor(bgColor)) {
+                textColor = "#FFFFFF";
             }
         }
 
@@ -532,11 +718,20 @@ class VisioConverter {
         const textX = pinX + (txtPinX * this.INCH_TO_PX);
         const textY = pinY - (txtPinY * this.INCH_TO_PX);
         
-        elements.push(
-            `<text x="${textX.toFixed(2)}" y="${textY.toFixed(2)}" text-anchor="middle" dominant-baseline="middle" ` +
-            `font-family="${fontFamily}" font-size="${fontSize.toFixed(1)}" fill="${textColor}">` +
-            `${this.escapeXml(textContent)}</text>`
-        );
+        // Handle multi-line text
+        const textLines = textContent.split(/\r?\n/);
+        const lineHeight = fontSize * 1.2;
+        
+        textLines.forEach((line, index) => {
+            if (!line.trim()) return; // Skip empty lines
+            
+            const yOffset = (index - (textLines.length - 1) / 2) * lineHeight;
+            elements.push(
+                `<text x="${textX.toFixed(2)}" y="${(textY + yOffset).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" ` +
+                `font-family="${fontFamily}" font-size="${fontSize.toFixed(1)}" font-weight="${fontWeight}" font-style="${fontStyle}" fill="${textColor}">` +
+                `${this.escapeXml(line.trim())}</text>`
+            );
+        });
         
         return elements;
     }
@@ -723,6 +918,34 @@ class VisioConverter {
         if (val === null || val === undefined) return 0;
         const num = parseFloat(val);
         return isNaN(num) ? 0 : num;
+    }
+
+    /**
+     * Check if a color is dark (requires white text)
+     */
+    isDarkColor(hexColor) {
+        if (!hexColor || !hexColor.startsWith('#')) return false;
+        
+        const rgb = hexColor.substring(1);
+        const r = parseInt(rgb.substring(0, 2), 16);
+        const g = parseInt(rgb.substring(2, 4), 16);
+        const b = parseInt(rgb.substring(4, 6), 16);
+        
+        // Calculate luminance (simplified)
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+        return luminance < 128;
+    }
+
+    /**
+     * Add gradient definition for dynamic gradients
+     */
+    addGradientDefinition(gradientId, startColor, endColor) {
+        this.customGradients.push(
+            `  <linearGradient id="${gradientId}" x1="0%" y1="0%" x2="0%" y2="100%">`,
+            `    <stop offset="0%" style="stop-color:${startColor};stop-opacity:1" />`,
+            `    <stop offset="100%" style="stop-color:${endColor};stop-opacity:1" />`,
+            `  </linearGradient>`
+        );
     }
 
     /**

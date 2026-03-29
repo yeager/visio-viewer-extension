@@ -1,5 +1,24 @@
 {
+  "name": "visio-viewer-extension",
+  "version": "1.0.0",
+  "description": "View Microsoft Visio (.vsdx) files directly in Chrome using [libvisio-ng](https://github.com/nicoptere/libvisio-ng) and [Pyodide](https://pyodide.org/).",
+  "main": "background.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yeager/visio-viewer-extension.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yeager/visio-viewer-extension/issues"
+  },
+  "homepage": "https://github.com/yeager/visio-viewer-extension#readme",
   "dependencies": {
-    "jsdom": "^29.0.1"
+    "jsdom": "^29.0.1",
+    "jszip": "^3.10.1"
   }
 }
