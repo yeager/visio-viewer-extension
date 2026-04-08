@@ -17,7 +17,7 @@ function handleVsdxUrl(tabId, url) {
   // Pass all URLs (including file://) with ?url= parameter
   // The viewer will try to fetch via background service worker first,
   // and fall back to file picker prompt if that fails
-  const viewerUrl = chrome.runtime.getURL('viewer-new.html') + '?url=' + encodeURIComponent(url);
+  const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(url);
   chrome.tabs.update(tabId, { url: viewerUrl });
 }
 
@@ -49,7 +49,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 // Intercept .vsdx downloads
 chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
   if (item.filename && item.filename.toLowerCase().endsWith('.vsdx')) {
-    const viewerUrl = chrome.runtime.getURL('viewer-new.html') + '?url=' + encodeURIComponent(item.url);
+    const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(item.url);
     chrome.tabs.create({ url: viewerUrl });
     chrome.downloads.cancel(item.id);
     suggest({ filename: item.filename });
@@ -60,7 +60,7 @@ chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'file-data' && message.data) {
     pendingFileData = { data: message.data, filename: message.filename };
-    const viewerUrl = chrome.runtime.getURL('viewer-new.html') + '?source=local';
+    const viewerUrl = chrome.runtime.getURL('viewer.html') + '?source=local';
     chrome.tabs.update(sender.tab.id, { url: viewerUrl });
     return;
   }

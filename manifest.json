@@ -31,7 +31,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["viewer-new.html", "jszip.min.js", "libvisio.js"],
+      "resources": ["viewer.html", "jszip.min.js", "libvisio.js"],
       "matches": ["<all_urls>"]
     }
   ]
