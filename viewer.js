@@ -4,6 +4,7 @@
 
   // State
   let converter = null;
+  let loadGeneration = 0;
   let currentPage = 0;
   let scale = 1;
   let translateX = 0;
@@ -62,31 +63,62 @@
     else loading.classList.add("hidden");
   }
 
+  document.getElementById("dismiss-error").addEventListener("click", () => {
+    errorOverlay.classList.add("hidden");
+  });
+
+  function beginLoad() {
+    errorOverlay.classList.add("hidden");
+    document.querySelectorAll(".file-prompt-overlay").forEach(el => el.remove());
+    if (welcome) welcome.classList.add("hidden");
+    setLoading(true, msg("parsing"));
+    return ++loadGeneration;
+  }
+
+  async function openFile(file) {
+    const generation = beginLoad();
+    try {
+      if (!/\.vsdx$/i.test(file.name)) throw new Error("Please select a .vsdx file.");
+      const buffer = await file.arrayBuffer();
+      if (generation !== loadGeneration) return;
+      await convertFile(buffer, file.name, generation);
+    } catch (e) {
+      if (generation !== loadGeneration) return;
+      setLoading(false);
+      showError(e.message || String(e));
+    }
+  }
+
   // ---- Convert .vsdx to SVG pages ----
-  async function convertFile(arrayBuffer, filename) {
+  async function convertFile(arrayBuffer, filename, generation = beginLoad()) {
     if (welcome) welcome.classList.add("hidden");
     setLoading(true, msg("parsing"));
     try {
       // Create new converter instance
-      converter = new VisioConverter();
+      const candidate = new VisioConverter();
       
       // Load and parse the VSDX file
-      await converter.loadFromArrayBuffer(arrayBuffer);
+      await candidate.loadFromArrayBuffer(arrayBuffer);
+      if (generation !== loadGeneration) return;
       
-      const pages = converter.getPages();
+      const pages = candidate.getPages();
       if (pages.length === 0) {
         showError(msg("errorNoPages"));
         setLoading(false);
         return;
       }
 
+      // Render before replacing the last successfully opened document.
+      const firstPage = candidate.renderPage(0);
+      converter = candidate;
+      svgContainer.innerHTML = firstPage;
       fileTitle.textContent = filename || "Visio Viewer";
       currentPage = 0;
-      renderPage(0);
       updatePageControls();
       zoomToFit();
       setLoading(false);
     } catch (e) {
+      if (generation !== loadGeneration) return;
       setLoading(false);
       console.error("Conversion error:", e);
       showError("Failed to parse file: " + (e.message || e));
@@ -140,7 +172,7 @@
     const vh = viewport.clientHeight;
     const natW = svg.viewBox?.baseVal?.width || svg.clientWidth || 800;
     const natH = svg.viewBox?.baseVal?.height || svg.clientHeight || 600;
-    const fitScale = Math.min((vw - 40) / natW, (vh - 40) / natH, 2);
+    const fitScale = Math.max(0.1, Math.min((vw - 40) / natW, (vh - 40) / natH, 2));
     scale = fitScale;
     translateX = (vw - natW * scale) / 2;
     translateY = (vh - natH * scale) / 2;
@@ -212,8 +244,7 @@
       e.preventDefault();
       const file = e.dataTransfer.files[0];
       if (!file) return;
-      const buf = await file.arrayBuffer();
-      await convertFile(buf, file.name);
+      await openFile(file);
     });
   }
 
@@ -221,8 +252,8 @@
   fileInput.addEventListener("change", async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const buf = await file.arrayBuffer();
-    await convertFile(buf, file.name);
+    fileInput.value = "";
+    await openFile(file);
   });
 
   // ---- Drag & drop ----
@@ -238,8 +269,8 @@
     dropZone.classList.add("hidden");
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    const buf = await file.arrayBuffer();
-    await convertFile(buf, file.name);
+    fileInput.value = "";
+    await openFile(file);
   });
 
   // ---- Keyboard ----
@@ -281,16 +312,23 @@
   }
 
   async function openFromUrl(url) {
+    const generation = beginLoad();
     setLoading(true, "Downloading file…");
     try {
+      const parsedUrl = new URL(url);
+      if (!["http:", "https:", "file:"].includes(parsedUrl.protocol)) {
+        throw new Error("Use an HTTP, HTTPS or local file URL.");
+      }
       const buf = await fetchUrl(url);
-      const filename = decodeURIComponent(url.split("/").pop().split("?")[0] || "file.vsdx");
-      await convertFile(buf, filename);
+      if (generation !== loadGeneration) return;
+      const filename = filenameFromUrl(url);
+      await convertFile(buf, filename, generation);
     } catch (e) {
+      if (generation !== loadGeneration) return;
       setLoading(false);
       if (url.startsWith("file://")) {
         // file:// fetch failed — show friendly file picker prompt
-        const fname = decodeURIComponent(url.split("/").pop().split("?")[0] || "file.vsdx");
+        const fname = filenameFromUrl(url);
         showFilePrompt(fname);
       } else {
         let msg = "Failed to download file: " + e.message;
@@ -309,6 +347,13 @@
     }
   });
 
+  function filenameFromUrl(url) {
+    try {
+      const name = new URL(url).pathname.split("/").pop() || "file.vsdx";
+      try { return decodeURIComponent(name); } catch { return name; }
+    } catch { return "file.vsdx"; }
+  }
+
   // ---- Show file picker prompt for local files ----
   function showFilePrompt(filename) {
     const overlay = document.createElement("div");
@@ -317,23 +362,29 @@
       <div class="file-prompt-box">
         <h2>📁 Local File Detected</h2>
         <p>Chrome extensions cannot directly read local files.<br>
-        Please select <strong>${filename}</strong> using the file picker below.</p>
+        Please select <strong></strong> using the file picker below.</p>
         <label class="file-prompt-btn">
           Select File
-          <input type="file" accept=".vsdx,.vsd,.vsdm" style="display:none">
+          <input type="file" accept=".vsdx" style="display:none">
         </label>
         <p class="file-prompt-hint">Or drag & drop the file onto this page.</p>
       </div>
     `;
+    overlay.querySelector("strong").textContent = filename;
     document.body.appendChild(overlay);
 
+    overlay.addEventListener("dragover", e => e.preventDefault());
+    overlay.addEventListener("drop", async e => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (file) await openFile(file);
+    });
     const input = overlay.querySelector("input[type=file]");
     input.addEventListener("change", async () => {
       const file = input.files[0];
       if (!file) return;
       overlay.remove();
-      const buf = await file.arrayBuffer();
-      await convertFile(buf, file.name);
+      await openFile(file);
     });
   }
 

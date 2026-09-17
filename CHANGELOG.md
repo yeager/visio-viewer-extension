@@ -1,3 +1,14 @@
+# 2.0.1 — 2026-09-17
+
+- Fix error dismissal under extension content security policy.
+- Keep the newest requested document when file reads, downloads or parsing overlap.
+- Preserve the current document when a replacement fails.
+- Display local filenames as text and allow dropping onto the local-file prompt.
+- Limit file pickers to supported .vsdx files and keep zoom positive in tiny viewports.
+- Add a reproducible npm test suite and correct development instructions.
+
+Validation: eight Node/JSDOM tests, including real generated VSDX parsing. Chrome extension navigation and download interception were not exercised by these tests.
+
 # Changelog
 
 ## 2.0.0 (2026-03-29)

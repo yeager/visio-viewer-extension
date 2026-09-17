@@ -5,8 +5,8 @@ View Microsoft Visio (.vsdx) files directly in Chrome. No plugins, no cloud serv
 ## Features
 
 - **Pure JavaScript** — no Python, no WebAssembly, no server
-- **Instant loading** — 66 KB total, renders in under 1 second
-- **Full rendering** — shapes, connectors, text, colors, gradients, shadows, arrows
+- **Local processing** — bundled JavaScript dependencies; no server required
+- **Rendering support** — shapes, connectors, text, colors, gradients, shadows, arrows
 - **Multi-page** — navigate between pages
 - **Zoom & pan** — scroll to zoom, drag to pan, keyboard shortcuts
 - **Drag & drop** — drop a .vsdx file onto the viewer
@@ -54,8 +54,8 @@ Supported:
 
 | | v1 (Pyodide) | v2 (Pure JS) |
 |---|---|---|
-| Size | ~50 MB | **66 KB** |
-| Load time | 10-30s | **<1s** |
+| Runtime | Python + WASM | Bundled JavaScript |
+| Load time | Includes runtime startup | Depends on document size |
 | Windows | ❌ | ✅ |
 | Dependencies | Python + WASM | JSZip only |
 | .vsdx support | ✅ | ✅ |
@@ -67,10 +67,12 @@ Built by porting [libvisio-ng](https://github.com/nicoptere/libvisio-ng) (Python
 
 ```bash
 # Test with Node.js
-npm install jsdom
-node test.js
+npm ci
+npm test
 ```
 
 ## License
 
 MIT
+
+Tests cover file-opening races, error recovery, local-file prompts, zoom bounds, and a generated VSDX archive through the real converter. Browser UI tests are still recommended before Chrome Web Store submission.
