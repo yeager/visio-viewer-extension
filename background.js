@@ -1,89 +1,63 @@
-// Service worker: intercept .vsdx file downloads and open in viewer
+// Keep Chrome's download intact and open the completed local copy.
+const viewer = chrome.runtime.getURL("viewer.html");
 
-// Pending file data to pass to viewer tabs
-let pendingFileData = null;
-// Track tabs we've already redirected to avoid loops
-const redirectedTabs = new Set();
-
-// Universal handler for .vsdx URLs
-function handleVsdxUrl(tabId, url) {
-  if (redirectedTabs.has(tabId)) return;
-  if (!url || !url.toLowerCase().endsWith('.vsdx')) return;
-  if (url.startsWith('chrome-extension://')) return;
-
-  redirectedTabs.add(tabId);
-  setTimeout(() => redirectedTabs.delete(tabId), 10000);
-
-  // Pass all URLs (including file://) with ?url= parameter
-  // The viewer will try to fetch via background service worker first,
-  // and fall back to file picker prompt if that fails
-  const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(url);
-  chrome.tabs.update(tabId, { url: viewerUrl });
+function isVisioFile(url) {
+  return /\.vsdx$/i.test(url.pathname);
 }
 
-// Multiple event listeners to catch .vsdx URLs at various stages
-chrome.webNavigation.onBeforeNavigate.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
+function viewerUrl(fileUrl) {
+  return viewer + "?url=" + encodeURIComponent(fileUrl);
+}
 
-chrome.webNavigation.onCommitted.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
-
-chrome.webNavigation.onCompleted.addListener((details) => {
-  if (details.frameId !== 0) return;
-  handleVsdxUrl(details.tabId, details.url);
-});
-
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url) {
-    handleVsdxUrl(tabId, changeInfo.url);
+function localFileUrl(filename) {
+  const path = filename.replace(/\\/g, "/");
+  const encodePath = (value) => value.split("/").map(encodeURIComponent).join("/");
+  if (path.startsWith("//")) {
+    const firstSeparator = path.indexOf("/", 2);
+    if (firstSeparator < 0) return null;
+    const host = path.slice(2, firstSeparator);
+    return new URL("file://" + host + encodePath(path.slice(firstSeparator)));
   }
-  if (changeInfo.status === 'complete' && tab.url) {
-    handleVsdxUrl(tabId, tab.url);
+  if (/^[A-Za-z]:\//.test(path)) {
+    return new URL("file:///" + path.slice(0, 2) + encodePath(path.slice(2)));
   }
-});
+  return path.startsWith("/") ? new URL("file://" + encodePath(path)) : null;
+}
 
-// Intercept .vsdx downloads
-chrome.downloads.onDeterminingFilename.addListener((item, suggest) => {
-  if (item.filename && item.filename.toLowerCase().endsWith('.vsdx')) {
-    const viewerUrl = chrome.runtime.getURL('viewer.html') + '?url=' + encodeURIComponent(item.url);
-    chrome.tabs.create({ url: viewerUrl });
-    chrome.downloads.cancel(item.id);
-    suggest({ filename: item.filename });
+chrome.webNavigation.onBeforeNavigate.addListener(({frameId, tabId, url}) => {
+  if (frameId !== 0) return;
+  const parsed = new URL(url);
+  if (parsed.protocol === "file:" && isVisioFile(parsed)) {
+    chrome.tabs.update(tabId, {url: viewerUrl(parsed.href)}).catch(console.warn);
   }
 });
 
-// Handle messages from content script and viewer
+chrome.downloads.onChanged.addListener(async ({id, state}) => {
+  if (state?.current !== "complete") return;
+  try {
+    const [item] = await chrome.downloads.search({id});
+    if (!item?.filename) return;
+    const url = localFileUrl(item.filename);
+    if (url && isVisioFile(url)) await chrome.tabs.create({url: viewerUrl(url.href)});
+  } catch (error) {
+    console.warn("Could not open the completed Visio download:", error);
+  }
+});
+
+// Each response goes back to its own viewer request, even after a worker restart.
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'file-data' && message.data) {
-    pendingFileData = { data: message.data, filename: message.filename };
-    const viewerUrl = chrome.runtime.getURL('viewer.html') + '?source=local';
-    chrome.tabs.update(sender.tab.id, { url: viewerUrl });
-    return;
+  if (message.type !== "fetch-file" || !sender.url || new URL(sender.url).pathname !== "/viewer.html" ||
+      sender.id !== chrome.runtime.id || !sender.url.startsWith(viewer)) return false;
+  try {
+    const url = new URL(message.url);
+    if (url.protocol !== "file:" || !isVisioFile(url)) throw new Error("Select a local Visio file.");
+    fetch(url).then(async (response) => {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      sendResponse({data: Array.from(new Uint8Array(await response.arrayBuffer()))});
+    }).catch((error) => sendResponse({error: error.message}));
+  } catch (error) {
+    sendResponse({error: error.message});
+    return false;
   }
-
-  if (message.type === 'get-pending-file') {
-    const data = pendingFileData;
-    pendingFileData = null;
-    sendResponse(data || { error: 'No pending file data' });
-    return;
-  }
-
-  if (message.type === 'fetch-file' && message.url) {
-    fetch(message.url)
-      .then(resp => {
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        return resp.arrayBuffer();
-      })
-      .then(buf => {
-        sendResponse({ data: Array.from(new Uint8Array(buf)) });
-      })
-      .catch(err => {
-        sendResponse({ error: err.message || 'Failed to fetch file' });
-      });
-    return true;
-  }
+  return true;
 });

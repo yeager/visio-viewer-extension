@@ -10,9 +10,11 @@ View Microsoft Visio (.vsdx) files directly in Chrome. No plugins, no cloud serv
 - **Multi-page** — navigate between pages
 - **Zoom & pan** — scroll to zoom, drag to pan, keyboard shortcuts
 - **Drag & drop** — drop a .vsdx file onto the viewer
-- **Auto-intercept** — opens .vsdx files automatically when browsing or downloading
+- **Automatic opening** — opens completed .vsdx downloads and local .vsdx navigation in the viewer
 - **i18n** — English and Swedish
 - **Works everywhere** — Windows, macOS, Linux
+
+When local file access is disabled for the extension in Chromium, select the saved file in the viewer or drag it onto the prompt.
 
 ## Rendering Quality
 

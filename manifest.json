@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extName__",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
   "icons": {
@@ -14,37 +14,10 @@
   },
   "permissions": [
     "downloads",
-    "webNavigation",
-    "tabs"
+    "webNavigation"
   ],
   "host_permissions": [
     "file:///*",
     "<all_urls>"
-  ],
-  "content_scripts": [
-    {
-      "matches": [
-        "file:///*"
-      ],
-      "include_globs": [
-        "file:///*.vsdx"
-      ],
-      "js": [
-        "content-script.js"
-      ],
-      "run_at": "document_start"
-    }
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "viewer.html",
-        "jszip.min.js",
-        "libvisio.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
   ]
 }

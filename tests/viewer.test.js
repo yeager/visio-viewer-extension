@@ -138,3 +138,34 @@ test('real ZIP parsing and SVG rendering integrate with file opening', async () 
   assert.match(v.document.getElementById('svg-container').textContent, /Hello diagram/);
   v.dom.window.close();
 });
+
+
+test('page order and labels follow catalog relationships, including empty pages', async () => {
+  const v = viewer();
+  const JSZip = require('../jszip.min.js');
+  v.window.JSZip = JSZip;
+  v.window.eval(fs.readFileSync(path.join(root, 'libvisio.js'), 'utf8'));
+  const zip = new JSZip();
+  const ns = 'http://schemas.microsoft.com/office/visio/2012/main';
+  const rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  zip.file('visio/pages/pages.xml', `<Pages xmlns="${ns}" xmlns:r="${rel}">
+    <Page Name="Tenth file first"><Rel r:id="second"/></Page>
+    <Page Name="Empty sheet"><Rel r:id="first"/></Page>
+  </Pages>`);
+  zip.file('visio/pages/_rels/pages.xml.rels',
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="first" Target="page1.xml"/><Relationship Id="second" Target="page10.xml"/>' +
+    '</Relationships>');
+  zip.file('visio/pages/page1.xml', `<PageContents xmlns="${ns}"/>`);
+  zip.file('visio/pages/page10.xml', `<PageContents xmlns="${ns}"><Shapes><Shape ID="1">
+    <Cell N="Width" V="2"/><Cell N="Height" V="1"/><Cell N="PinX" V="2"/><Cell N="PinY" V="2"/>
+    <Text>Catalog order marker</Text></Shape></Shapes></PageContents>`);
+  const data = await zip.generateAsync({ type: 'nodebuffer' });
+  v.open({ name: 'ordered.vsdx', arrayBuffer: async () => data });
+  for (let i = 0; i < 50 && v.document.getElementById('file-title').textContent !== 'ordered.vsdx'; i++) await tick();
+  assert.match(v.document.getElementById('svg-container').textContent, /Catalog order marker/);
+  assert.equal(v.document.getElementById('page-info').textContent, 'Tenth file first (1/2)');
+  v.document.getElementById('next-page').click();
+  assert.equal(v.document.getElementById('page-info').textContent, 'Empty sheet (2/2)');
+  v.dom.window.close();
+});

@@ -1,3 +1,7 @@
+# 2.0.2 — 2026-11-19
+
+- Open completed downloads from their local copy without aborting or downloading them again. Keep local files tied to their viewer tabs and follow the Visio page catalog.
+
 # 2.0.1 — 2026-09-17
 
 - Fix error dismissal under extension content security policy.

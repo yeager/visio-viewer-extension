@@ -388,19 +388,6 @@
     });
   }
 
-  // ---- Load pending file data from background (for file:// URLs) ----
-  async function loadPendingFile() {
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage({ type: "get-pending-file" }, (response) => {
-        if (chrome.runtime.lastError || !response || response.error) {
-          resolve(null);
-          return;
-        }
-        resolve(response);
-      });
-    });
-  }
-
   // ---- Init ----
   async function main() {
     setLoading(true, "Initializing viewer…");
@@ -423,17 +410,7 @@
     const source = params.get("source");
     const url = params.get("url");
 
-    if (source === "local") {
-      // File loaded via content script → get data from background
-      const pending = await loadPendingFile();
-      if (pending && pending.data) {
-        const buf = new Uint8Array(pending.data).buffer;
-        await convertFile(buf, pending.filename || "file.vsdx");
-      } else {
-        setLoading(false);
-        showError(msg("errorLoadFailed"));
-      }
-    } else if (source === "file") {
+    if (source === "file") {
       // Navigated to a local file:// .vsdx — prompt user to select it
       setLoading(false);
       const fname = params.get("name") || "file.vsdx";

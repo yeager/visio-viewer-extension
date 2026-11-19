@@ -209,12 +209,12 @@ class VisioConverter {
         this.media = await this.extractMedia();
         
         // Parse pages
-        const pageFiles = this.getPageFiles();
+        const pageFiles = await this.getPageEntries();
         this.pages = [];
         this.pageNames = [];
         
         for (let i = 0; i < pageFiles.length; i++) {
-            const pageFile = pageFiles[i];
+            const {path: pageFile, name} = pageFiles[i];
             try {
                 const pageXml = await this.zipFile.file(pageFile).async("text");
                 const parser = new DOMParser();
@@ -237,7 +237,7 @@ class VisioConverter {
                 });
                 
                 // Extract page name
-                this.pageNames.push(this.extractPageName(pageXml) || `Page ${i + 1}`);
+                this.pageNames.push(name || this.extractPageName(pageXml) || `Page ${i + 1}`);
             } catch (error) {
                 console.warn(`Failed to parse page ${i}:`, error);
             }
@@ -278,14 +278,47 @@ class VisioConverter {
     /**
      * Parse page files from ZIP structure
      */
-    getPageFiles() {
-        const files = [];
-        Object.keys(this.zipFile.files).forEach(name => {
-            if (name.match(/^visio\/pages\/page\d+\.xml$/)) {
-                files.push(name);
+    async getPageEntries() {
+        const numbered = /^visio\/pages\/page(\d+)\.xml$/;
+        const files = Object.keys(this.zipFile.files).filter(path => numbered.test(path))
+            .sort((a, b) => Number(a.match(numbered)[1]) - Number(b.match(numbered)[1]) || a.localeCompare(b));
+        const catalogFile = this.zipFile.file("visio/pages/pages.xml");
+        const relsFile = this.zipFile.file("visio/pages/_rels/pages.xml.rels");
+        if (!catalogFile) return files.map(path => ({path}));
+        const catalog = this.parseXml(await catalogFile.async("text"));
+        const pages = Array.from(catalog.getElementsByTagNameNS(this.NS.v, "Page"));
+        const name = page => page?.getAttribute("Name") || page?.getAttribute("NameU");
+        const fallback = () => files.map((path, i) => ({path, name: name(pages[i])}));
+        if (!relsFile) return fallback();
+        const rels = this.parseXml(await relsFile.async("text"));
+        const targets = new Map();
+        const base = new URL("https://archive.invalid/visio/pages/pages.xml");
+        for (const rel of rels.getElementsByTagNameNS(this.RELS_NS, "Relationship")) {
+            if (rel.getAttribute("TargetMode") === "External") continue;
+            const target = rel.getAttribute("Target");
+            if (!target) continue;
+            try {
+                const url = new URL(target, base);
+                const path = decodeURIComponent(url.pathname.slice(1));
+                if (url.origin === base.origin && path.startsWith("visio/pages/") &&
+                    path.endsWith(".xml") && this.zipFile.file(path)) {
+                    targets.set(rel.getAttribute("Id"), path);
+                }
+            } catch {
+                // Ignore invalid package relationship targets.
             }
-        });
-        return files.sort();
+        }
+        const seen = new Set();
+        const ordered = [];
+        for (const page of pages) {
+            const rel = page.getElementsByTagNameNS(this.NS.v, "Rel")[0];
+            const path = rel && targets.get(rel.getAttributeNS(this.NS.r, "id"));
+            if (path && !seen.has(path)) {
+                seen.add(path);
+                ordered.push({path, name: name(page)});
+            }
+        }
+        return ordered.length ? ordered.concat(files.filter(path => !seen.has(path)).map(path => ({path}))) : fallback();
     }
 
     /**
